@@ -3,8 +3,8 @@ echo "BUILD START"
 # Install dependencies
 python3 -m pip install -r requirements.txt
 
-# Create the output directory if it doesn't exist
-mkdir -p staticfiles_build
+# # Create the output directory if it doesn't exist
+# mkdir -p staticfiles_build
 
 # Collect static files
 python3 manage.py collectstatic --noinput --clear
