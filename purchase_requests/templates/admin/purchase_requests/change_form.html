@@ -1,0 +1,13 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block object-tools %}
+  {{ block.super }}
+  {% if export_url %}
+    <li>
+      <a href="{{ export_url }}" class="button" style="margin-left:10px;">
+        Export to Excel
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}

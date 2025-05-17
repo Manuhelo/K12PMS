@@ -1,0 +1,10 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+  <div class="object-tools">
+    <ul>
+      <li><a href="{% url 'admin:purchase_request_upload' %}">Upload Purchase Request</a></li>
+    </ul>
+  </div>
+  {{ block.super }}
+{% endblock %}

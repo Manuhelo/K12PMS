@@ -1,0 +1,31 @@
+<!-- templates/purchase/my_requests.html -->
+<table>
+    <thead>
+      <tr>
+        <th>Request #</th>
+        <th>Department</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in requests %}
+      <tr>
+        <td>{{ req.request_number }}</td>
+        <td>{{ req.department }}</td>
+        <td>{{ req.status }}</td>
+        <td>{{ req.created_at }}</td>
+        <td>
+          {% if req.status == 'draft' %}
+            <a href="{% url 'edit_request' req.id %}">Edit</a> |
+            <a href="{% url 'delete_request' req.id %}">Delete</a>
+          {% else %}
+            Locked
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  

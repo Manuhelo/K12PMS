@@ -1,0 +1,9 @@
+{% extends "admin/change_list.html" %}
+{% block object-tools %}
+  <div class="object-tools">
+    <ul class="nav nav-tabs">
+      <li><a href="{% url 'admin:upload_educationalproduct_csv' %}">Upload CSV</a></li>
+    </ul>
+  </div>
+  {{ block.super }}
+{% endblock %}
