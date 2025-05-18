@@ -1,31 +1,109 @@
 from django.contrib import admin
-from .models import PurchaseRequest, RequestItem
+from .models import PurchaseRequest, RequestItem, PurchaseRequestStatusHistory
 from products.models import EducationalProduct
-from .forms import PurchaseRequestUploadForm
+from .forms import PurchaseRequestUploadForm, RequestItemCSVUploadForm
 import openpyxl
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
-
+import io
 from django.contrib.auth import get_user_model
 from django.urls import path, reverse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.utils import timezone
 import pandas as pd
-
+from django.utils.html import format_html
+from django.template.loader import render_to_string
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, get_object_or_404
 from django import forms    
+
+from django.utils.safestring import mark_safe
+import csv
+from io import TextIOWrapper
+
 
 
 User = get_user_model()
 
 
+class RequestItemInline(admin.TabularInline):
+    model = RequestItem
+    extra = 0  # No extra empty rows
+    readonly_fields = ['get_category', 'get_subcategory', 'get_grade']
+    fields = ['product', 'quantity', 'get_category', 'get_subcategory', 'get_grade']
+
+    def get_category(self, obj):
+        return obj.product.category
+    get_category.short_description = 'Category'
+
+    def get_subcategory(self, obj):
+        return obj.product.sub_category
+    get_subcategory.short_description = 'Subcategory'
+
+    def get_grade(self, obj):
+        return obj.product.grade
+    get_grade.short_description = 'Grade'
+
+    def has_add_permission(self, request, obj=None):
+        if not obj:  # While creating a new PurchaseRequest
+            return True
+        return (
+            request.user.role == 'DepartmentUser' and
+            obj.status in ['Draft', 'Rework Required']
+        )
+
+    def has_change_permission(self, request, obj=None):
+        if not obj:
+            return True
+        return (
+            request.user.role == 'DepartmentUser' and
+            obj.status in ['Draft', 'Rework Required']
+        )
+
+    def has_delete_permission(self, request, obj=None):
+        if not obj:
+            return True
+        return (
+            request.user.role == 'DepartmentUser' and
+            obj.status in ['Draft', 'Rework Required']
+        )
+
 
 @admin.register(PurchaseRequest)
 class PurchaseRequestAdmin(admin.ModelAdmin):
-    list_display = ('request_number', 'requested_by', 'status', 'description', 'created_at','updated_at')
+    list_display = ('request_number', 'requested_by', 'status', 'description', 'created_at','updated_at', 'status_history_preview')
     change_list_template = "admin/purchase_requests/purchase_request_changelist.html"
     actions = ['submit_request','mark_as_reviewed', 'send_back_for_rework','export_with_items_to_excel']
+    inlines = [RequestItemInline]
 
+
+    def status_history_preview(self, obj):
+        updates = obj.status_history.all()
+        if not updates.exists():
+            return "No updates"
+        
+        popup_id = f"popup-{obj.id}"
+        
+        # Create a clickable link
+        html = f'''
+                <a href="#" onclick="togglePopup('{popup_id}'); return false;">
+                    Status History
+                </a>
+                <div id="{popup_id}" style="display:none; background:#f9f9f9;color: #000;  padding:10px; margin-top:5px; border:1px solid #ccc;border-radius: 5px;
+        max-width: 400px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    <ul style="margin:0; padding:0; list-style-type:none;">
+                        {''.join(f"<li><b>{u.changed_by}</b> ➝ <i>{u.new_status}</i> - <span style='color: blue;'>{u.changed_at.strftime('%Y-%m-%d %H:%M')}</span></li>" for u in updates)}
+                    </ul>
+                </div>
+            '''
+        return format_html(html)
+
+    status_history_preview.short_description = 'Status History'
+
+    class Media:
+        js = ('admin/js/status_popup.js',)
     
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == 'status':
@@ -217,9 +295,20 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
         response['Content-Disposition'] = f'attachment; filename=purchase_request_{pk}.xlsx'
         wb.save(response)
         return response
+    
+
+    def save_model(self, request, obj, form, change):
+        obj._changed_by = request.user
+        super().save_model(request, obj, form, change)
 
 # admin.site.register(PurchaseRequest)
 # admin.site.register(RequestItem)
+@admin.register(PurchaseRequestStatusHistory)
+class PurchaseRequestStatusHistoryAdmin(admin.ModelAdmin):
+    list_display = ('purchase_request', 'old_status', 'new_status','changed_by', 'changed_at')
+
+
+
 
 @admin.register(RequestItem)
 class RequestItemAdmin(admin.ModelAdmin):
