@@ -17,7 +17,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django import forms    
-
+from django.db.models import Sum
 from django.utils.safestring import mark_safe
 import csv
 from io import TextIOWrapper
@@ -72,10 +72,19 @@ class RequestItemInline(admin.TabularInline):
 
 @admin.register(PurchaseRequest)
 class PurchaseRequestAdmin(admin.ModelAdmin):
-    list_display = ('request_number', 'requested_by', 'status', 'description', 'created_at','updated_at', 'status_history_preview')
+    list_display = ('request_number', 'requested_by', 'description', 'created_at', 'status', 'item_count', 'total_quantity','status_history_preview')
     change_list_template = "admin/purchase_requests/purchase_request_changelist.html"
     actions = ['submit_request','mark_as_reviewed', 'send_back_for_rework','export_with_items_to_excel']
     inlines = [RequestItemInline]
+
+
+    def item_count(self, obj):
+        return obj.request_items.count()
+    item_count.short_description = 'Items Count'
+
+    def total_quantity(self, obj):
+        return obj.request_items.aggregate(total=Sum('quantity'))['total'] or 0
+    total_quantity.short_description = 'Total Quantity'
 
 
     def status_history_preview(self, obj):
