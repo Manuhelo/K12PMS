@@ -32,13 +32,8 @@ class PurchaseRequest(models.Model):
         super().save(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        is_new = not self.pk
-
-        if is_new:
-            now = timezone.now()
-            count = PurchaseRequest.objects.filter(created_at__date=now.date()).count() + 1
-            self.request_number = f"REQ-{now.strftime('%Y%m%d')}-{count:03d}"
-        else:
+        # Check if this is an update
+        if self.pk:
             old = PurchaseRequest.objects.get(pk=self.pk)
             if old.status != self.status:
                 PurchaseRequestStatusHistory.objects.create(
@@ -48,7 +43,6 @@ class PurchaseRequest(models.Model):
                     changed_by=getattr(self, '_changed_by', None),  # set in admin
                     changed_at=timezone.now()
                 )
-
         super().save(*args, **kwargs)
 
 class RequestItem(models.Model):
