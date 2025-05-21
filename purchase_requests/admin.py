@@ -247,8 +247,14 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
 
                 for _, row in df.iterrows():
                     sku = row['sku']
-                    quantity = int(row.get('quantity', 0))
                     item_remarks = row.get('remarks', '')
+
+                    try:
+                        raw_qty = str(row.get('quantity', '0')).replace(',', '').strip()
+                        quantity = int(raw_qty)
+                    except ValueError:
+                        messages.error(request, f"Invalid quantity value: {row.get('quantity')} in row: {row.to_dict()}")
+                        return redirect("..")
 
                     product = existing_products.get(sku)  # Now it's safe!
                     RequestItem.objects.create(

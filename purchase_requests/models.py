@@ -25,15 +25,16 @@ class PurchaseRequest(models.Model):
         return self.request_number or f"Request by {self.requested_by}"
     
     def save(self, *args, **kwargs):
-        if not self.request_number:
+        is_new = not self.pk
+
+        # Generate request_number if it's a new object or request_number is missing
+        if is_new or not self.request_number:
             now = timezone.now()
             count = PurchaseRequest.objects.filter(created_at__date=now.date()).count() + 1
             self.request_number = f"REQ-{now.strftime('%Y%m%d')}-{count:03d}"
-        super().save(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
-        # Check if this is an update
-        if self.pk:
+        # If it's an update and status changed, record it in history
+        if not is_new:
             old = PurchaseRequest.objects.get(pk=self.pk)
             if old.status != self.status:
                 PurchaseRequestStatusHistory.objects.create(
@@ -43,6 +44,7 @@ class PurchaseRequest(models.Model):
                     changed_by=getattr(self, '_changed_by', None),  # set in admin
                     changed_at=timezone.now()
                 )
+
         super().save(*args, **kwargs)
 
 class RequestItem(models.Model):
