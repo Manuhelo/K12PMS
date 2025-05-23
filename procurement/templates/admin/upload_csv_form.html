@@ -1,4 +1,7 @@
 {% extends "admin/base_site.html" %}
+
+{% load static %}
+
 {% block content %}
   <h1>{{ title }}</h1>
   <form method="post" enctype="multipart/form-data">
@@ -6,4 +9,45 @@
     {{ form.as_p }}
     <button type="submit" class="button btn btn-primary">Upload</button>
   </form>
+
+  {% if upload_stats %}
+  <h2>Upload Summary</h2>
+  <table border="1" cellspacing="0" cellpadding="5">
+    <thead>
+      <tr>
+        <th>Purchase Request Number</th>
+        <th>Total Items in Purchase Request</th>
+        <th>Uploaded Successfully</th>
+        <th>Total Rows in Uploaded File</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pr_number, stats in upload_stats.items %}
+        <tr>
+          <td>{{ pr_number }}</td>
+          <td>{{ stats.total }}</td>
+          <td>{{ stats.uploaded }}</td>
+          <td>{{ stats.total_rows_in_file }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+{% if unmatched_rows %}
+  <h3>Unmatched Rows (Not Uploaded)</h3>
+  <table border="1">
+    <tr>
+      {% for key in unmatched_rows.0.keys %}
+        <th>{{ key|title }}</th>
+      {% endfor %}
+    </tr>
+    {% for row in unmatched_rows %}
+      <tr>
+        {% for key, value in row.items %}
+          <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
+{% endif %}
 {% endblock %}

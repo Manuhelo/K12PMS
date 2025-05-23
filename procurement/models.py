@@ -31,6 +31,13 @@ class VendorBid(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     remarks = models.TextField(blank=True, null=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['rfq']),
+            models.Index(fields=['vendor']),
+        ]
+        unique_together = ('rfq', 'vendor')
+        
 
 class VendorQuotation(models.Model):
     rfq_item = models.ForeignKey(RFQItem, on_delete=models.CASCADE, related_name='vendor_quotations')
