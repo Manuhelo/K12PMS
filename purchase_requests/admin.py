@@ -30,6 +30,7 @@ User = get_user_model()
 class RequestItemInline(admin.TabularInline):
     model = RequestItem
     extra = 0  # No extra empty rows
+    raw_id_fields = ['product']  # Use input + search widget instead of dropdown
     readonly_fields = ['get_category', 'get_subcategory', 'get_grade']
     fields = ['product', 'quantity', 'get_category', 'get_subcategory', 'get_grade']
 
