@@ -16,7 +16,6 @@ from vendors.models import Vendor
 import openpyxl
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
-from admin_searchable_dropdown.filters import AutocompleteFilter
 
 
 admin.site.register(RFQItem)
@@ -36,7 +35,22 @@ class RFQAdmin(admin.ModelAdmin):
 class VendorQuotationInline(admin.TabularInline):
     model = VendorQuotation
     extra = 0
-    readonly_fields = ['rfq_item','quoted_price','lead_time_days','remarks']
+    readonly_fields = ['rfq_item','quantity','quoted_price', 'total_price','lead_time_days','remarks']
+
+    def quantity(self, obj):
+        try:
+            return obj.rfq_item.request_item.quantity
+        except AttributeError:
+            return "-"
+    quantity.short_description = "Requested Qty"
+
+    def total_price(self, obj):
+        try:
+            qty = obj.rfq_item.request_item.quantity
+            return qty * obj.quoted_price
+        except (AttributeError, TypeError):
+            return "-"
+    total_price.short_description = "Total Price"
 
 @admin.register(VendorBid)
 class VendorBidAdmin(admin.ModelAdmin):
@@ -52,8 +66,13 @@ class VendorBidAdmin(admin.ModelAdmin):
     total_items.short_description = "Total Items"
 
     def total_cost(self, obj):
-        quotations = obj.quotations.all()
-        return sum(q.quoted_price for q in quotations if q.quoted_price is not None)
+        quotations = obj.quotations.select_related('rfq_item__request_item')
+        total = 0
+        for q in quotations:
+            quantity = q.rfq_item.request_item.quantity if q.rfq_item and q.rfq_item.request_item else 1
+            if q.quoted_price is not None:
+                total += q.quoted_price * quantity
+        return total
     total_cost.short_description = "Total Cost"
     
     def get_urls(self):
