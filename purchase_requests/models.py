@@ -6,6 +6,10 @@ from django.utils import timezone
 User = get_user_model()
 
 class PurchaseRequest(models.Model):
+    SEGMENT_CHOICES = [
+        ('OIS', 'OIS'),
+        ('B2B', 'B2B'),
+    ]
     STATUS_CHOICES = [
         ('Draft', 'Draft'),
         ('Submitted', 'Submitted'),
@@ -13,6 +17,7 @@ class PurchaseRequest(models.Model):
         ('Rework Required', 'Rework Required'),
         ('Reviewed', 'Reviewed'),
     ]
+    segment = models.CharField(max_length=10, choices=SEGMENT_CHOICES, blank=False, null=False, verbose_name="Segment")
     request_number = models.CharField(max_length=50, unique=True, blank=True)
     requested_by = models.ForeignKey(User, on_delete=models.CASCADE)
     description = models.CharField(max_length=300)

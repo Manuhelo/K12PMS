@@ -72,7 +72,7 @@ class RequestItemInline(admin.TabularInline):
 
 @admin.register(PurchaseRequest)
 class PurchaseRequestAdmin(admin.ModelAdmin):
-    list_display = ('request_number', 'requested_by', 'description', 'created_at', 'status', 'item_count', 'total_quantity','status_history_preview')
+    list_display = ('request_number', 'requested_by','segment', 'description', 'created_at', 'status', 'item_count', 'total_quantity','status_history_preview')
     change_list_template = "admin/purchase_requests/purchase_request_changelist.html"
     actions = ['submit_request','mark_as_reviewed', 'send_back_for_rework','export_with_items_to_excel']
     inlines = [RequestItemInline]
@@ -233,12 +233,14 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
                 # Create purchase request
                 now = timezone.now()
                 user = request.user
+                segment = form.cleaned_data['segment']  # from form input
                 description = form.cleaned_data['description']
                 remarks = form.cleaned_data['remarks']
                 request_number = f"REQ-{now.strftime('%Y%m%d')}-{PurchaseRequest.objects.count() + 1:03d}"
 
                 purchase_request = PurchaseRequest.objects.create(
                     requested_by=user,
+                    segment=segment,  # Add this line
                     description=description,
                     status='Draft',
                     remarks=remarks,
@@ -282,7 +284,7 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
         ws.title = "Purchase Request"
 
         headers = [
-            'Request ID', 'Status', 'Requested By', 'Created At',
+            'Request ID', 'Status','Segment', 'Requested By', 'Created At',
             'Item ID', 'Product Name', 'Category', 'Subcategory', 'Grade', 'Quantity'
         ]
         ws.append(headers)
@@ -292,6 +294,7 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
             ws.append([
                 pr.request_number,
                 pr.status,
+                pr.segment,  # Add this
                 pr.requested_by.username,
                 pr.created_at.strftime("%Y-%m-%d %H:%M"),
                 product.sku,
