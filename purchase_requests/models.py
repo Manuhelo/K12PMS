@@ -9,6 +9,7 @@ class PurchaseRequest(models.Model):
     SEGMENT_CHOICES = [
         ('OIS', 'OIS'),
         ('B2B', 'B2B'),
+        ('OCSE', 'OCSE'),
     ]
     STATUS_CHOICES = [
         ('Draft', 'Draft'),

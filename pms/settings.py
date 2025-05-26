@@ -88,9 +88,9 @@ WSGI_APPLICATION = 'pms.wsgi.application'
 # }
 
 
-# database_url = os.environ.get("DATABASE_URL")
+database_url = os.environ.get("DATABASE_URL")
 DATABASES ={
-    'default' : dj_database_url.parse('postgres://neondb_owner:npg_iFk9UoJQ7XRy@ep-divine-resonance-a49ecal3-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require')
+    'default' : dj_database_url.parse(database_url)
 }
 
 

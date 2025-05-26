@@ -212,10 +212,21 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
             form = PurchaseRequestUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 try:
-                    df = pd.read_csv(request.FILES['file'])
-                except Exception:
-                    messages.error(request, "Invalid CSV format.")
+                    file = request.FILES['file']
+                    filename = file.name.lower()
+
+                    if filename.endswith('.csv'):
+                        df = pd.read_csv(file)
+                    elif filename.endswith(('.xls', '.xlsx')):
+                        df = pd.read_excel(file)
+                    else:
+                        messages.error(request, "Unsupported file type. Please upload a CSV or Excel file.")
+                        return redirect("..")
+                except Exception as e:
+                    messages.error(request, f"File processing error: {str(e)}")
                     return redirect("..")
+                
+                df.columns = df.columns.str.strip().str.lower()
 
                 df['sku'] = df['sku'].astype(str).str.strip().str.upper()
                 skus = df['sku'].tolist()
@@ -272,7 +283,14 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
         else:
             form = PurchaseRequestUploadForm()
 
-        return render(request, "admin/purchase_requests/purchase_request_upload.html", {"form": form})
+        sample_data = [
+        {"title": "Grade 1_English Workbook_Vol 2 (25)", "sku": "4000008632", "quantity": 9450},
+        {"title": "Grade 1_Maths Textbook_Vol 2 (25)", "sku": "4000008821", "quantity": 9450},
+        {"title": "Grade 1_Maths Workbook_Vol 2 (25)", "sku": "4000008785", "quantity": 9450},
+        {"title": "Grade 1_Trilingual Hin-Kan_Rani's Wish_Vol 2 (25)", "sku": "4000008758", "quantity": 2973},
+        {"title": "Grade 1_Trilingual Hin-Mar_Rani's Wish_Vol 2 (25)", "sku": "4000008766", "quantity": 3447},
+        ]
+        return render(request, "admin/purchase_requests/purchase_request_upload.html", {"form": form, "sample_data": sample_data})
     
     def export_excel(self, request, pk):
         from .models import PurchaseRequest  # adjust if needed

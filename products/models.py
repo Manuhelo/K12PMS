@@ -4,7 +4,8 @@ from django.db import models
 class EducationalProduct(models.Model):
     SEGMENT_CHOICES = (
         ('ois','OIS'),
-        ('b2b','B2B')
+        ('b2b','B2B'),
+        ('ocse','OCSE')
     )
     YEAR_CHOICES = (
         ('23-24','AY 23-24'),
@@ -23,6 +24,8 @@ class EducationalProduct(models.Model):
         ('notebook', 'NoteBook'),
         ('languagebook', 'LanguageBook'),
         ('dibbook', 'DIBBook'),
+        ('studentplanner', 'StudentPlanner'),
+        ('crayons', 'Crayons'),
     )
     UNIT_CHOICES = [
     ('pcs', 'Piece'),

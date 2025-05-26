@@ -10,7 +10,7 @@ from .models import EducationalProduct
 
 @admin.register(EducationalProduct)
 class EducationalProductAdmin(admin.ModelAdmin):
-    list_display = ['sku', 'product_description', 'category', 'sub_category', 'grade']
+    list_display = ['sku', 'product_description', 'category', 'sub_category', 'grade','volume']
     search_fields = ['year','sku', 'product_description', 'category', 'sub_category','grade', 'publisher','volume']
     change_list_template = "admin/educational_product_changelist.html"
 

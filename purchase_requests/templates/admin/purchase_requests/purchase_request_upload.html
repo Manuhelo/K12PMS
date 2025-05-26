@@ -1,4 +1,25 @@
 {% extends "admin/base_site.html" %}
+
+
+{% block extrahead %}
+  <style>
+      table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+      }
+      th, td {
+          padding: 8px 12px;
+          border: 1px solid #ccc;
+          text-align: left;
+      }
+      th {
+          background-color: #f2f2f2;
+      }
+  </style>
+{% endblock %}
+
+
 {% block content %}
   <h2>Upload Purchase Request (CSV)</h2>
   <form method="post" enctype="multipart/form-data">
@@ -6,4 +27,28 @@
     {{ form.as_p }}
     <button type="submit" class="default">Upload</button>
   </form>
+
+  <hr>
+<h3>Sample Upload Format</h3>
+<table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Title Name</th>
+            <th>SKU</th>
+            <th>Quantity</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in sample_data %}
+        <tr>
+            <td>{{ row.title }}</td>
+            <td>{{ row.sku }}</td>
+            <td>{{ row.quantity }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 {% endblock %}
+
+
