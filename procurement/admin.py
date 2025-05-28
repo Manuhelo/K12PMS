@@ -17,6 +17,7 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
 import uuid
+from babel.numbers import format_currency
 
 
 admin.site.register(RFQItem)
@@ -73,7 +74,7 @@ class VendorBidAdmin(admin.ModelAdmin):
             quantity = q.rfq_item.request_item.quantity if q.rfq_item and q.rfq_item.request_item else 1
             if q.quoted_price is not None:
                 total += q.quoted_price * quantity
-        return total
+        return format_currency(total, 'INR', locale='en_IN')
     total_cost.short_description = "Total Cost"
     
     def get_urls(self):
