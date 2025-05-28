@@ -62,6 +62,7 @@ class VendorBidAdmin(admin.ModelAdmin):
     readonly_fields = ('submitted_at',)  # Make 'submitted_at' read-only in form
     inlines = [VendorQuotationInline]
     change_list_template = "admin/vendorquotation_change_list.html"
+    actions = ['export_as_excel']
 
     def total_items(self, obj):
         return obj.quotations.count()
@@ -91,8 +92,16 @@ class VendorBidAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.upload_csv),
                 name="vendorquotation_upload_csv",  # important!
             ),
+        path('export/<int:pk>/', self.admin_site.admin_view(self.export_excel), name='vendorbid_export'),   
         ]
         return custom_urls + urls
+    
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        print("CHANGE VIEW CALLED FOR VendorBid")  # Debug line
+        extra_context = extra_context or {}
+        export_url = reverse('admin:vendorbid_export', args=[object_id])
+        extra_context['export_url'] = export_url
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
     def approve_button(self, obj):
         if obj.status == 'Approved':
@@ -300,6 +309,56 @@ class VendorBidAdmin(admin.ModelAdmin):
                 'upload_stats': upload_stats  # Add this line
             }
         return render(request, "admin/upload_csv_form.html", context)
+    
+    def export_excel(self, request, pk):
+
+        try:
+            bid = VendorBid.objects.get(pk=pk)
+        except VendorBid.DoesNotExist:
+            self.message_user(request, "VendorBid not found.", level=messages.ERROR)
+            return redirect("..")
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Vendor Bids"
+
+        headers = [
+            "Vendor", "RFQ", "Purchase Request", "Item Name", "SKU", "Quantity",
+            "Quoted Price","Total Price", "Lead Time (days)", "Remarks", "Submission Group", "Status", 
+        ]
+        ws.append(headers)
+
+        for quotation in bid.quotations.select_related('rfq_item__request_item__product'):
+            item = quotation.rfq_item.request_item
+            product = item.product
+            quantity = item.quantity or 1
+            quoted_price = quotation.quoted_price or 0
+            total_price = quoted_price * quantity
+
+            ws.append([
+                bid.vendor.name,
+                str(bid.rfq.id),
+                item.purchase_request.request_number,
+                product.product_description,
+                product.sku,
+                quantity,
+                quoted_price,
+                total_price,
+                quotation.lead_time_days,
+                quotation.remarks,
+                str(bid.submission_group),
+                bid.status,
+                
+            ])
+
+        # Autofit column widths
+        for column_cells in ws.columns:
+            length = max(len(str(cell.value or "")) for cell in column_cells)
+            ws.column_dimensions[get_column_letter(column_cells[0].column)].width = length + 2
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="vendor_bids.xlsx"'
+        wb.save(response)
+        return response
 
 # admin.site.register(VendorBid,VendorBidAdmin)
 
