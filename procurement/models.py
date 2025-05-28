@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from purchase_requests.models import PurchaseRequest, RequestItem
 from vendors.models import Vendor  # if you have vendor app, or define here
+import uuid
 
 User = get_user_model()
 
@@ -27,6 +28,8 @@ class RFQItem(models.Model):
 class VendorBid(models.Model):
     rfq = models.ForeignKey(RFQ, on_delete=models.CASCADE)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    # NEW FIELD: A unique identifier for each bid submission/upload
+    submission_group = models.UUIDField(default=uuid.uuid4, editable=False)
     status = models.CharField(max_length=20, choices=[("Pending", "Pending"), ("Approved", "Approved"), ("Rejected", "Rejected")])
     submitted_at = models.DateTimeField(auto_now_add=True)
     remarks = models.TextField(blank=True, null=True)
@@ -36,7 +39,7 @@ class VendorBid(models.Model):
             models.Index(fields=['rfq']),
             models.Index(fields=['vendor']),
         ]
-        unique_together = ('rfq', 'vendor')
+        unique_together = ('rfq', 'vendor','submission_group')
         
 
 class VendorQuotation(models.Model):

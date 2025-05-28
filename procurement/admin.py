@@ -16,6 +16,7 @@ from vendors.models import Vendor
 import openpyxl
 from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
+import uuid
 
 
 admin.site.register(RFQItem)
@@ -54,7 +55,7 @@ class VendorQuotationInline(admin.TabularInline):
 
 @admin.register(VendorBid)
 class VendorBidAdmin(admin.ModelAdmin):
-    list_display = ('rfq', 'vendor', 'status','total_items', 'total_cost','approve_button', 'reject_button', 'submitted_at')  # Show these columns in admin list view
+    list_display = ('rfq', 'vendor', 'submission_group','status','total_items', 'total_cost','approve_button', 'reject_button', 'submitted_at')  # Show these columns in admin list view
     #list_filter = ('status', 'rfq',)  # Add filter options in the sidebar
     search_fields = ('vendor__name',)  # Enable search on related fields
     readonly_fields = ('submitted_at',)  # Make 'submitted_at' read-only in form
@@ -151,6 +152,8 @@ class VendorBidAdmin(admin.ModelAdmin):
             if form.is_valid():
                 upload_file = form.cleaned_data['csv_file']
                 file_name = upload_file.name
+                # After confirming the file is valid, generate a new submission_group for this CSV upload:
+                submission_group = uuid.uuid4()
         
                 unmatched_rows = []  # For rows with SKUs not found
 
@@ -228,6 +231,7 @@ class VendorBidAdmin(admin.ModelAdmin):
                             vendor_bid, _ = VendorBid.objects.get_or_create(
                                 rfq=rfq,
                                 vendor=vendor,
+                                submission_group=submission_group,
                                 defaults={'status': 'Pending'}
                             )
 
