@@ -21,6 +21,8 @@ from django.db.models import Sum
 from django.utils.safestring import mark_safe
 import csv
 from io import TextIOWrapper
+from procurement.models import VendorQuotation, PurchaseOrder, DeliveryTracking, RFQItem, RFQ, VendorBid  # assumed model locations
+from django.template.response import TemplateResponse
 
 
 
@@ -153,6 +155,7 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
         custom_urls = [
             path('upload/', self.admin_site.admin_view(self.upload_csv), name='purchase_request_upload'),
             path('export/<int:pk>/', self.admin_site.admin_view(self.export_excel), name='purchase_request_export'),
+            path('dashboard/', self.admin_site.admin_view(self.dashboard_view), name='purchase_request_dashboard'),
         ]
         return custom_urls + urls
     
@@ -334,6 +337,50 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
         return response
     
 
+    def dashboard_view(self, request):
+        data = []
+
+        all_requests = PurchaseRequest.objects.all().order_by('-created_at')
+
+        for pr in all_requests:
+            # Count items
+            item_count = pr.request_items.count()
+            # Get related RFQs for the purchase request first
+            rfqs = pr.rfqs.all()
+
+            # Get the correct count based on unique (rfq, vendor, submission_group)
+            quotation_count = VendorBid.objects.filter(rfq__in=rfqs).values(
+                'rfq', 'vendor', 'submission_group'
+            ).distinct().count()
+
+            approved_bids = VendorBid.objects.filter(rfq__purchase_request=pr, status="Approved")
+            approved_vendors = approved_bids.values_list('vendor__name', flat=True).distinct()
+
+
+            pos = PurchaseOrder.objects.filter(vendor_bid__rfq__in=rfqs)
+            po_numbers = pos.values_list('po_number', flat=True)
+            delivery_dates = DeliveryTracking.objects.filter(purchase_order__in=pos).values_list('estimated_delivery', flat=True)
+
+
+            data.append({
+                'request_number': pr.request_number,
+                'item_count': item_count,
+                'quotation_count': quotation_count,
+                'approved_vendors': ", ".join(approved_vendors),
+                'po_numbers': ", ".join(po_numbers),
+                'delivery_dates': ", ".join([d.strftime('%Y-%m-%d') for d in delivery_dates]),
+            })
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Purchase Request Dashboard",
+            total_requests=PurchaseRequest.objects.count(),
+            submitted_requests=PurchaseRequest.objects.filter(status='Submitted').count(),
+            reviewed_requests=PurchaseRequest.objects.filter(status='Reviewed').count(),
+            dashboard_data=data,
+        )
+        return TemplateResponse(request, "admin/purchase_requests/dashboard.html", context)
+
     def save_model(self, request, obj, form, change):
         obj._changed_by = request.user
         super().save_model(request, obj, form, change)
@@ -403,4 +450,8 @@ class RequestItemAdmin(admin.ModelAdmin):
         if obj and obj.purchase_request.status not in ['Draft', 'Rework Required']:
             return False
         return super().has_delete_permission(request, obj)
+    
+
+admin.site.register(PurchaseOrder)
+admin.site.register(DeliveryTracking)
     

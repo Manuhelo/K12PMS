@@ -10,7 +10,7 @@ import openpyxl
 import pandas as pd
 import io
 from .forms import VendorQuotationUploadForm
-from .models import RFQ, RFQItem, VendorQuotation, VendorBid
+from .models import RFQ, RFQItem, VendorQuotation, VendorBid, PurchaseOrder, DeliveryTracking
 from purchase_requests.models import RequestItem, PurchaseRequest
 from vendors.models import Vendor
 import openpyxl
@@ -18,6 +18,32 @@ from openpyxl.utils import get_column_letter
 from django.http import HttpResponse
 import uuid
 from babel.numbers import format_currency
+from django.utils import timezone
+
+
+def generate_custom_po_number():
+    prefix = "24"
+    zeros = "0000"
+
+    # Get last PO's sequence number
+    last_po = PurchaseOrder.objects.order_by('-id').first()
+    if last_po and last_po.po_number:
+        # last_po.po_number looks like "240000xxxx"
+        # extract last 4 digits and convert to int
+        last_seq_str = last_po.po_number[-4:]
+        try:
+            last_seq = int(last_seq_str)
+        except ValueError:
+            last_seq = 0
+        new_seq = last_seq + 1
+    else:
+        new_seq = 1  # start from 0001 if none exists
+
+    # pad sequence to 4 digits
+    seq_str = f"{new_seq:04d}"
+
+    po_number = f"{prefix}{zeros}{seq_str}"
+    return po_number
 
 
 admin.site.register(RFQItem)
@@ -359,6 +385,28 @@ class VendorBidAdmin(admin.ModelAdmin):
         response['Content-Disposition'] = 'attachment; filename="vendor_bids.xlsx"'
         wb.save(response)
         return response
+    
+
+    def save_model(self, request, obj, form, change):
+        was_approved = False
+        if change:
+            old_obj = VendorBid.objects.get(pk=obj.pk)
+            # Check if status changed to Approved
+            if old_obj.status != 'Approved' and obj.status == 'Approved':
+                was_approved = True
+        
+        super().save_model(request, obj, form, change)
+
+        if was_approved:
+            # Create PO if not exists for this VendorBid
+            po, created = PurchaseOrder.objects.get_or_create(vendor_bid=obj)
+            if created:
+                # Generate your custom PO number here
+                po.po_number = generate_custom_po_number()
+                po.issued_by = request.user
+                po.save()
+
+    
 
 # admin.site.register(VendorBid,VendorBidAdmin)
 
@@ -376,18 +424,4 @@ class VendorQuotationAdmin(admin.ModelAdmin):
         if obj.vendor_bid and obj.vendor_bid.submitted_at:
             return obj.vendor_bid.submitted_at
         return "-"
-
-    # def get_urls(self):
-    #     urls = super().get_urls()
-    #     custom_urls = [
-    #         path(
-    #             "upload-csv/",
-    #             self.admin_site.admin_view(self.upload_csv),
-    #             name="vendorquotation_upload_csv",  # important!
-    #         ),
-    #     ]
-    #     return custom_urls + urls
-
-
-
 

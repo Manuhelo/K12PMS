@@ -1,0 +1,14 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+  {{ block.super }}
+  
+  <div style="margin-top: 30px;">
+    <h2>Quick Access Links</h2>
+    <ul>
+      <li><a href="{% url 'admin:purchase_request_upload' %}">Upload Purchase Requests</a></li>
+      <li><a href="{% url 'admin:purchase_request_dashboard' %}">Purchase Request Dashboard</a></li>
+      <!-- Add more links here -->
+    </ul>
+  </div>
+{% endblock %}

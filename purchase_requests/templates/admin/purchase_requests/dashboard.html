@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>📊 Purchase Request Dashboard</h1>
+
+<table class="admin-table" style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr>
+            <th>Request Number</th>
+            <th>No. of Items</th>
+            <th>No. of Quotations</th>
+            <th>Approved Vendors</th>
+            <th>PO Number(s)</th>
+            <th>Expected Delivery Date(s)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in dashboard_data %}
+        <tr>
+            <td>{{ row.request_number }}</td>
+            <td>{{ row.item_count }}</td>
+            <td>{{ row.quotation_count }}</td>
+            <td>{{ row.approved_vendors }}</td>
+            <td>{{ row.po_numbers }}</td>
+            <td>{{ row.delivery_dates }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+
+
