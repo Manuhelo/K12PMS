@@ -1,0 +1,45 @@
+<h2>Goods Receipt for PO: {{ po.po_number }}</h2>
+<p>Vendor: {{ vendor.name }}</p>
+<p>Status: {{ po.status }}</p>
+<p>Issued On: {{ po.issued_at }}</p>
+
+<form method="post">
+  {% csrf_token %}
+
+  <label>Warehouse:</label>
+  <select name="warehouse" required>
+    <option value="">-- Select Warehouse --</option>
+    {% for wh in warehouses %}
+      <option value="{{ wh.id }}">{{ wh.name }}</option>
+    {% endfor %}
+  </select>
+
+  <br><br>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Quantity Ordered</th>
+        <th>Quoted Price</th>
+        <th>Lead Time</th>
+        <th>Quantity Received</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in item_details %}
+        <tr>
+          <td>{{ item.product_name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.quoted_price }}</td>
+          <td>{{ item.lead_time_days }}</td>
+          <td>
+            <input type="number" name="qty_{{ item.product_id }}" min="0" required>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <br>
+  <button type="submit">Submit GRN</button>
+</form>

@@ -1,0 +1,50 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}PO Fulfillment Report - {{ po.po_number }}{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
+        <!-- Card Container -->
+        <div class="card card-dark">
+          <div class="card-header">
+            <h3 class="card-title">PO Fulfillment Report - {{ po.po_number }}</h3>
+          </div>
+          <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Product</th>
+                  <th>Ordered Qty</th>
+                  <th>Received Qty</th>
+                  <th>Pending Qty</th>
+                  <th>Fulfillment %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in report %}
+                <tr>
+                  <td>{{ item.product.sku }}</td>
+                  <td>{{ item.product.product_description }}</td>
+                  <td>{{ item.ordered }}</td>
+                  <td>{{ item.received }}</td>
+                  <td>{{ item.pending }}</td>
+                  <td>
+                    {{ item.fulfillment_percent }}%
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- End Card -->
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock content %}

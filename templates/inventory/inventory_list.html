@@ -1,0 +1,149 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <form method="GET" class="row g-2 align-items-end">
+      <!-- Category Filter -->
+      <div class="col-md-2">
+        <label for="category">Category</label>
+        <select name="category" multiple class="form-control select2" id="category">
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if cat in selected_categories %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Subcategory Filter -->
+      <div class="col-md-2">
+        <label for="subcategory">Subcategory</label>
+        <select name="subcategory" multiple class="form-control select2" id="subcategory">
+          {% for sub in subcategories %}
+            <option value="{{ sub }}" {% if sub in selected_subcategories %}selected{% endif %}>{{ sub }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Grade Filter -->
+      <div class="col-md-2">
+        <label for="grade">Grade</label>
+        <select name="grade" multiple class="form-control select2" id="grade">
+          {% for grade in grades %}
+            <option value="{{ grade }}" {% if grade in selected_grades %}selected{% endif %}>{{ grade }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Volume Filter -->
+      <div class="col-md-2">
+        <label for="volume">Volume</label>
+        <select name="volume" multiple class="form-control select2" id="volume">
+          {% for vol in volumes %}
+            <option value="{{ vol }}" {% if vol in selected_volumes %}selected{% endif %}>{{ vol }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Warehouse Filter -->
+      <div class="col-md-2">
+        <label for="warehouse">Warehouse</label>
+        <select name="warehouse" multiple class="form-control select2" id="warehouse">
+          {% for wh in warehouses %}
+            <option value="{{ wh.id }}" {% if wh.id in selected_warehouses %}selected{% endif %}>{{ wh.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Filter and Download -->
+      <div class="col-md-2 text-end">
+        <button type="submit" class="btn btn-primary w-100 mb-2">Filter</button>
+        <button type="submit" name="download" value="1" class="btn btn-success w-100">Download CSV</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+          <tr>
+            <th>SKU Code</th>
+            <th>Product Description</th>
+            <th>Category</th>
+            <th>Subcategory</th>
+            <th>Grade</th>
+            <th>Volume</th>
+            <th>Total Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in grouped_data %}
+          <tr>
+            <td>{{ row.product__sku }}</td>
+            <td>{{ row.product__product_description }}</td>
+            <td>{{ row.product__category }}</td>
+            <td>{{ row.product__sub_category }}</td>
+            <td>{{ row.product__grade }}</td>
+            <td>{{ row.product__volume }}</td>
+            <td>{{ row.total_qty }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3">No items found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block custom_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .select2-container--default .select2-selection--multiple {
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    min-height: 38px;
+    max-height: 70px; /* ✅ Fix height */
+    overflow-y: auto; /* ✅ Enable scroll */
+    overflow-x: hidden;
+  }
+
+  .select2-selection__rendered {
+    display: block;
+    max-height: 65px;  /* ✅ Inner scroll height */
+    overflow-y: auto;
+  }
+
+  .select2-selection__choice {
+    background-color: #007bff !important;
+    color: #fff !important;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  .select2-results__option {
+    color: #000;
+  }
+
+  label {
+    font-weight: bold;
+  }
+</style>    
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    $('.select2').select2({
+      width: '100%',
+      placeholder: "Select one or more",
+      allowClear: true
+    });
+  });
+</script>
+{% endblock %}

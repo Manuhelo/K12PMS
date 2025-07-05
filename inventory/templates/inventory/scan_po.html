@@ -1,0 +1,45 @@
+<!-- Load QR Code Scanner -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<h2>Scan or Enter PO Number</h2>
+
+<!-- QR Code Camera Box -->
+<div id="reader" style="width: 300px; border: 1px solid #ccc; border-radius: 10px;"></div>
+
+<!-- Display Django messages -->
+{% if messages %}
+  <ul>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<!-- Manual Entry Form -->
+<form method="POST">
+  {% csrf_token %}
+  <input type="text" name="po_number" id="po_number" placeholder="Scan or type PO number" autofocus required />
+  <button type="submit">Submit</button>
+</form>
+
+<!-- QR Scanner Script -->
+<script>
+  function onScanSuccess(decodedText, decodedResult) {
+    // Stop scanner to avoid multiple triggers
+    html5QrCode.stop().then(() => {
+      document.getElementById("po_number").value = decodedText;
+      document.forms[0].submit(); // Submit form automatically
+    }).catch(err => {
+      console.error("Failed to stop scanner: ", err);
+    });
+  }
+
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    onScanSuccess
+  ).catch(err => {
+    console.error("Camera error: ", err);
+  });
+</script>

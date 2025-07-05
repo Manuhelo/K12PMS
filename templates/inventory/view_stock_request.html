@@ -1,0 +1,42 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Stock Request Detail{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="d-flex justify-content-between">
+    <h5>Stock Request #{{ stock_request.id }}</h5>
+    <a href="{% url 'export_stock_requests_excel' stock_request.id %}" class="btn btn-success btn-sm">Export to Excel</a>
+    <a href="{% url 'stock_request_list' %}" class="btn btn-secondary btn-sm">Back</a>
+  </div>
+  </div>
+  <div class="card-body">
+    <p><strong>Requesting Warehouse:</strong> {{ stock_request.requesting_warehouse.name }}</p>
+    <p><strong>Requested By:</strong> {{ stock_request.requested_by }}</p>
+    <p><strong>Status:</strong> {{ stock_request.status }}</p>
+    <p><strong>Remarks:</strong> {{ stock_request.remarks }}</p>
+    <p><strong>Date:</strong> {{ stock_request.requested_at }}</p>
+
+    <hr>
+    <h6>Requested Items</h6>
+    <table class="table table-sm table-bordered">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Quantity Requested</th>
+          <th>Quantity Approved</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product.product_description }}</td>
+          <td>{{ item.quantity_requested }}</td>
+          <td>{{ item.quantity_approved|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

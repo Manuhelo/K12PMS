@@ -1,0 +1,65 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+
+  <!-- Top bar with heading and back button -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5>Bulk Upload GRN</h5>
+    <a href="{% url 'grn_manage' %}" class="btn btn-sm btn-outline-secondary">
+      ← Back to GRN List
+    </a>
+  </div>
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Select Purchase Order</label>
+      <select name="po_id" class="form-control" required>
+        {% for po in pos %}
+          <option value="{{ po.id }}">{{ po.po_number }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+  <label>Select Warehouse</label>
+  <select name="warehouse_id" class="form-control" required>
+      {% for wh in warehouses %}
+        <option value="{{ wh.id }}">{{ wh.name }}</option>
+      {% endfor %}
+  </select>
+</div>
+
+    <div class="form-group">
+      <label>Upload GRN File (SKU Code, GRN Qty, Damage Qty)</label>
+      <input type="file" name="file" class="form-control" accept=".csv,.xls,.xlsx" required />
+    </div>
+
+    <button type="submit" name="upload" class="btn btn-info">Preview Items</button>
+  </form>
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+</section>
+{% endblock content %}
+
+{% block custom_css %}
+<style>
+  .invalid {
+    font-style: italic;
+    font-weight: bold;
+    color: red;
+  }
+  .valid {
+    font-style: italic;
+    font-weight: bold;
+    color: green;
+  }
+</style>
+{% endblock custom_css %}
+
+{% block custom_js %}
+<!-- No custom JS needed here right now -->
+{% endblock custom_js %}

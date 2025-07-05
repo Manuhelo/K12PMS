@@ -1,0 +1,17 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Upload Stock Request via Excel{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Select Excel File (Format: SKU, Quantity)</label>
+        <input type="file" name="excel_file" accept=".xlsx,.xls" class="form-control" required />
+      </div>
+      <button type="submit" class="btn btn-primary">Upload</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

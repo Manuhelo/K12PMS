@@ -1,0 +1,39 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Approve Stock Request #{{ stock_request.id }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h5><strong>Requested By:</strong> {{ stock_request.requested_by }}</h5>
+    <h5><strong>Warehouse:</strong> {{ stock_request.requesting_warehouse.name }}</h5>
+    <h5><strong>Remarks:</strong> {{ stock_request.remarks }}</h5>
+    <hr />
+
+    <form method="post">
+      {% csrf_token %}
+      <table class="table table-bordered">
+        <thead class="thead-dark">
+          <tr>
+            <th>Product</th>
+            <th>Requested Qty</th>
+            <th>Approved Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.product.product_description }}</td>
+            <td>{{ item.quantity_requested }}</td>
+            <td>
+              <input type="number" name="approved_{{ item.id }}" class="form-control" value="{{ item.quantity_requested }}" min="0" />
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <button type="submit" class="btn btn-success float-right">Approve</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

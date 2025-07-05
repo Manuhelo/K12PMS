@@ -452,6 +452,6 @@ class RequestItemAdmin(admin.ModelAdmin):
         return super().has_delete_permission(request, obj)
     
 
-admin.site.register(PurchaseOrder)
+#admin.site.register(PurchaseOrder)
 admin.site.register(DeliveryTracking)
     

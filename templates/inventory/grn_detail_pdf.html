@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: DejaVu Sans, sans-serif;
+      font-size: 12px;
+    }
+    h2, h4 {
+      margin: 0;
+      padding: 5px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 6px;
+      text-align: left;
+    }
+    .summary-table {
+      width: 100%;
+      margin-top: 10px;
+    }
+    .summary-table td {
+      vertical-align: top;
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>GRN Details - GRN #{{ grn.id }}</h2>
+
+  <table class="summary-table">
+    <tr>
+      <td>
+        <h4><strong>PO Number:</strong> {{ grn.purchase_order.po_number }}</h4>
+        <h4><strong>Warehouse:</strong> {{ grn.warehouse.name }}</h4>
+        <h4><strong>Received By:</strong> {{ grn.received_by }}</h4>
+        <h4><strong>Received At:</strong> {{ grn.received_at|date:"Y-m-d H:i" }}</h4>
+      </td>
+      <td style="text-align: right;">
+        <h4><strong>Total Ordered Qty:</strong> {{ total_ordered }}</h4>
+        <h4><strong>Total Received Qty:</strong> {{ total_received }}</h4>
+        <h4><strong>Total Damaged Qty:</strong> {{ total_damaged }}</h4>
+        <h4><strong>Total Pending Qty:</strong> {{ total_pending }}</h4>
+      </td>
+    </tr>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th>SKU</th>
+        <th>Product</th>
+        <th>Ordered Qty</th>
+        <th>Received Qty</th>
+        <th>Damaged Qty</th>
+        <th>Pending Qty</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.sku }}</td>
+        <td>{{ item.product }}</td>
+        <td>{{ item.ordered_qty }}</td>
+        <td>{{ item.received_qty }}</td>
+        <td>{{ item.damage_qty }}</td>
+        <td>{{ item.pending_qty }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</body>
+</html>

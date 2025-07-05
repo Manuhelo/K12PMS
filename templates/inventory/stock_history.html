@@ -1,0 +1,53 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="content">
+  <div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Stock History</h5>
+      <a href="{% url 'inventory_list' %}" class="btn btn-sm btn-outline-secondary">← Back to Inventory</a>
+    </div>
+    </div>
+    <div class="card-body">
+      <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+          <tr>
+            <th>Reference</th>
+            <th>SKU</th>
+            <th>Product</th>
+            <th>Warehouse</th>
+            <th>Previous Qty</th>
+            <th>Change</th>
+            <th>New Qty</th>
+            <th>Action</th>
+            <th>Changed By</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in history %}
+          <tr>
+            <td>{{ entry.reference_id }}</td>
+            <td>{{ entry.product.sku }}</td>
+            <td>{{ entry.product.product_description }}</td>
+            <td>{{ entry.warehouse.name }}</td>
+            <td>{{ entry.previous_quantity }}</td>
+            <td>{{ entry.changed_quantity }}</td>
+            <td>{{ entry.new_quantity }}</td>
+            <td>{{ entry.get_action_type_display }}</td>
+            <td>{{ entry.changed_by }}</td>
+            <td>{{ entry.changed_at|date:"Y-m-d H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10">No stock history available.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

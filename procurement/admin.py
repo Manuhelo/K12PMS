@@ -19,7 +19,15 @@ from django.http import HttpResponse
 import uuid
 from babel.numbers import format_currency
 from django.utils import timezone
+from .utils import generate_po_barcode
+from django.contrib import messages
 
+
+@admin.action(description="Generate barcode for selected PO(s)")
+def generate_barcode_for_po(modeladmin, request, queryset):
+    for po in queryset:
+        path = generate_po_barcode(po.po_number)
+        messages.success(request, f"Barcode generated for PO: {po.po_number} at {path}")
 
 def generate_custom_po_number():
     prefix = "24"
@@ -82,13 +90,17 @@ class VendorQuotationInline(admin.TabularInline):
 
 @admin.register(VendorBid)
 class VendorBidAdmin(admin.ModelAdmin):
-    list_display = ('rfq', 'vendor', 'submission_group','status','total_items', 'total_cost','approve_button', 'reject_button', 'submitted_at')  # Show these columns in admin list view
+    list_display = ('rfq','purchase_request_description', 'vendor', 'submission_group','status','total_items', 'total_cost','approve_button', 'reject_button', 'submitted_at')  # Show these columns in admin list view
     #list_filter = ('status', 'rfq',)  # Add filter options in the sidebar
     search_fields = ('vendor__name',)  # Enable search on related fields
     readonly_fields = ('submitted_at',)  # Make 'submitted_at' read-only in form
     inlines = [VendorQuotationInline]
     change_list_template = "admin/vendorquotation_change_list.html"
     actions = ['export_as_excel']
+
+    def purchase_request_description(self, obj):
+        return obj.rfq.purchase_request.description
+    purchase_request_description.short_description = 'PR Description'
 
     def total_items(self, obj):
         return obj.quotations.count()
@@ -425,3 +437,16 @@ class VendorQuotationAdmin(admin.ModelAdmin):
             return obj.vendor_bid.submitted_at
         return "-"
 
+
+from django.utils.html import format_html
+from django.urls import reverse
+
+@admin.register(PurchaseOrder)
+class PurchaseOrderAdmin(admin.ModelAdmin):
+    list_display = ('po_number', 'vendor_bid', 'status', 'issued_at','download_barcode')
+    #actions = [generate_barcode_for_po]
+
+    def download_barcode(self, obj):
+        return format_html('<a href="/procurement/po/{}/barcode/" target="_blank">Download Barcode</a>', obj.id)
+
+    download_barcode.short_description = 'Download Barcode'

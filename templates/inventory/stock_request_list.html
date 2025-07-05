@@ -1,0 +1,118 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Stock Request List{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between">
+        <h5>Stock Requests</h5>
+    <a href="{% url 'create_stock_request' %}" class="btn btn-success btn-sm">Raise Request</a>
+    </div>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Warehouse</th>
+                    <th>Status</th>
+                    <th>Requested By</th>
+                    <th>Requested At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in requests %}
+                <tr>
+                    <td>#{{ request.id }}</td>
+                    <td>{{ request.requesting_warehouse.name }}</td>
+                    <td>{{ request.status }}</td>
+                    <td>{{ request.requested_by }}</td>
+                    <td>{{ request.requested_at|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        {% if request.status == 'PENDING' and user.role == 'WarehouseHead' %}
+                        <!-- Approve (opens modal) -->
+                            <button class="btn btn-sm btn-success approve-btn"
+                                    data-request-id="{{ request.id }}"
+                                    data-toggle="modal"
+                                    data-target="#actionModal">
+                            Approve
+                            </button>
+
+                            <!-- Reject (form submit) -->
+                            <form method="POST" action="{% url 'stock_request_action' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="stock_request_id" value="{{ request.id }}">
+                            <input type="hidden" name="action_type" value="reject">
+                            <button class="btn btn-sm btn-warning" onclick="return confirm('Reject this request?')">Reject</button>
+                            </form>
+                        {% elif request.status == 'APPROVED' %}
+                            <span class="badge badge-success">Approved</span>
+                        {% elif request.status == 'REJECTED' %}
+                            <span class="badge badge-warning">Rejected</span>
+                        {% endif %}
+
+                        <a href="{% url 'view_stock_request' request.id %}" class="btn btn-sm btn-info">View</a>
+                        <a href="{% url 'delete_stock_request' request.id %}" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Delete this request?');">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No stock requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for Approve -->
+<div class="modal fade" id="actionModal" tabindex="-1" role="dialog" aria-labelledby="actionModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <form method="POST" action="{% url 'stock_request_action' %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="actionModalLabel">Approve Stock Request</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="stock_request_id" id="modalRequestId">
+          <input type="hidden" name="action_type" value="approve">
+
+          <div class="form-group">
+            <label for="fromWarehouse">Select From Warehouse</label>
+            <select name="from_warehouse" class="form-control" required>
+              <option value="">-- Select Warehouse --</option>
+              {% for wh in warehouses %}
+                <option value="{{ wh.id }}">{{ wh.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Approve</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const approveButtons = document.querySelectorAll('.approve-btn');
+    approveButtons.forEach(button => {
+      button.addEventListener('click', function () {
+        const requestId = this.getAttribute('data-request-id');
+        document.getElementById('modalRequestId').value = requestId;
+      });
+    });
+  });
+</script>
+{% endblock %}

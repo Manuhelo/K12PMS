@@ -1,0 +1,63 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="card">
+    <!-- ✅ Top section with heading and back button -->
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">GRN Details</h5>
+    <a href="{% url 'download_grn_detail' grn.id %}" class="btn btn-success float-right mb-2">Download CSV</a>
+    <a href="{% url 'download_grn_pdf' grn.id %}" class="btn btn-danger float-right mb-2">Download PDF</a>
+    <a href="{% url 'grn_manage' %}" class="btn btn-sm btn-outline-secondary">
+      ← Back to GRN List
+    </a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row">
+  <!-- Left side: GRN Info -->
+  <div class="col-md-6">
+    <h5><strong>Warehouse:</strong> {{ grn.warehouse.name }}</h5>
+    <h5><strong>PO Number:</strong> {{ grn.purchase_order.po_number }}</h5>
+    <h5><strong>Received By:</strong> {{ grn.received_by }}</h5>
+    <h5><strong>Received At:</strong> {{ grn.received_at }}</h5>
+  </div>
+
+  <!-- Right side: Totals -->
+  <div class="col-md-6 text-right">
+    <h5><strong>Total Ordered Qty:</strong> {{ total_ordered }}</h5>
+    <h5><strong>Total Received Qty:</strong> {{ total_received }}</h5>
+    <h5><strong>Total Damaged Qty:</strong> {{ total_damaged }}</h5>
+    <h5><strong>Total Pending Qty:</strong> {{ total_pending }}</h5>
+  </div>
+</div>
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead class="thead-dark">
+          <tr>
+            <th>SKU Code</th>
+            <th>Product</th>
+            <th>Ordered Qty</th>
+            <th>Received Qty</th>
+            <th>Damaged Qty</th>
+            <th>Pending Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.product }}</td>
+            <td>{{ item.ordered_qty }}</td>
+            <td>{{ item.received_qty }}</td>
+            <td>{{ item.damage_qty }}</td>
+            <td>{{ item.pending_qty }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <a href="{% url 'grn_manage' %}" class="btn btn-secondary mt-3">Back to GRN List</a>
+  </div>
+</div>
+{% endblock %}

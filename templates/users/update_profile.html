@@ -1,0 +1,47 @@
+{% extends 'main_app/base.html' %}
+{% load form_tags %}
+{% block page_title %}Update Profile{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Update Your Profile</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>{{ form.first_name.label }}</label>
+          {{ form.first_name|add_class:"form-control" }}
+        </div>
+        <div class="form-group col-md-6">
+          <label>{{ form.last_name.label }}</label>
+          {{ form.last_name|add_class:"form-control" }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>{{ form.email.label }}</label>
+          {{ form.email|add_class:"form-control" }}
+        </div>
+        <div class="form-group col-md-6">
+          <label>{{ form.department.label }}</label>
+          {{ form.department|add_class:"form-control" }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+          <label>{{ form.role.label }}</label>
+          {{ form.role|add_class:"form-control" }}
+        </div>
+        <!-- <div class="form-group col-md-6 d-flex align-items-end">
+          <a href="{% url 'password_change' %}" class="btn btn-warning btn-block">Change Password</a>
+        </div> -->
+      </div>
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'password_change' %}" class="btn btn-warning ml-2">Change Password</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

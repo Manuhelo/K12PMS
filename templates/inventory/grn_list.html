@@ -1,0 +1,56 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="content">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+  <div class="d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Manage GRNs</h5>
+    <a href="{% url 'upload_grn_items' %}" class="btn btn-sm btn-light text-primary fw-bold">
+      + Bulk Upload GRN
+    </a>
+  </div>
+</div>
+    <div class="card-body">
+      <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+          <tr>
+            <th>GRN Number</th>
+            <th>PO Number</th>
+            <th>Warehouse</th>
+            <th>Received By</th>
+            <th>Received At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grn in grns %}
+          <tr>
+            <td>{{ grn.id }}</td>
+            <td>{{ grn.purchase_order.po_number }}</td>
+            <td>{{ grn.warehouse.name }}</td>
+            <td>{{ grn.received_by }}</td>
+            <td>{{ grn.received_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              <a href="{% url 'grn_detail' grn.id %}" class="btn btn-sm btn-primary">View</a>
+              <!-- Optionally add: Delete, Print, etc -->
+               <form action="{% url 'delete_grn' grn.id %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this GRN?')">Delete</button>
+                </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">No GRNs found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

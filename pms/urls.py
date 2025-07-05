@@ -16,11 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+
+print("✅ Root urls.py is loaded")
 
 admin.site.site_header = "K12 PMS"
 admin.site.site_title = "K12 PMS Admin Portal"
 admin.site.index_title = "Welcome to K12 Product Management System"
 
+from django.http import HttpResponse
+
 urlpatterns = [
-    path('', admin.site.urls),
-]
+    path('admin/', admin.site.urls),
+    path('', include('users.urls')),
+    path('test/', lambda request: HttpResponse("Root test route works!")),  # TEMP TEST
+    path('procurement/', include('procurement.urls')),
+    path('inventory/', include('inventory.urls')),
+    
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

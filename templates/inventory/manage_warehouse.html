@@ -1,0 +1,56 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">{{page_title}}</h3>
+                        <a href="{% url 'upload_warehouses' %}" class="btn btn-sm btn-light text-primary fw-bold">
+                        + Bulk Add Warehouse
+                        </a>
+                        <a href="{% url 'add_warehouse' %}" class="btn btn-sm btn-light text-primary fw-bold">
+                        + Add Warehouse
+                        </a>
+                        </div>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example2" class="table table-bordered table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Warehouse Name</th>
+                                    <th>Loaction</th>
+                                    <th>Manager</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for warehouse in warehouses %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{warehouse.name}}</td>
+                                    <td>{{warehouse.location}}</td>
+                                    <td>{{warehouse.manager}}</td>
+                                    <td>
+                                        <a href="{% url 'edit_warehouse' warehouse.id %}" class="btn btn-info">Edit</a> -
+                                        <a href="{% url 'delete_warehouse' warehouse.id %}" onclick="return confirm('Are you sure you want to delete this warehouse ?')" class="btn btn-danger">Delete</a> 
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

@@ -1,0 +1,20 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Mark Stock Transfer Completed{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header bg-warning">Complete Transfer</div>
+  <div class="card-body">
+    <p><strong>Product:</strong> {{ transfer.product.product_description }}</p>
+    <p><strong>From:</strong> {{ transfer.from_warehouse.name }} | <strong>To:</strong> {{ transfer.to_warehouse.name }}</p>
+    <p><strong>Quantity:</strong> {{ transfer.quantity }}</p>
+    <p><strong>Status:</strong> {{ transfer.status }}</p>
+
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="confirm" value="1">
+      <button type="submit" class="btn btn-success">Mark as Completed</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+<h2>Purchase Order: {{ po.po_number }}</h2>
+<p>Vendor: {{ vendor.name }}</p>
+<p>Status: {{ po.status }}</p>
+<p>Issued On: {{ po.issued_at }}</p>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Quoted Price</th>
+            <th>Lead Time (Days)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in item_details %}
+        <tr>
+            <td>{{ item.product }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.quoted_price }}</td>
+            <td>{{ item.lead_time_days }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
