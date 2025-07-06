@@ -1,8 +1,8 @@
 {% load static %}
 <aside class="main-sidebar sidebar-dark-info elevation-4">
-    {% if request.user.role == 'admin' %}
+    {% if request.user.role == 'Admin' %}
     <!-- Brand Logo -->
-    <a href="{% url 'admin_dashboard' %}" class="brand-link">
+    <a href="{% url 'main_dashboard' %}" class="brand-link">
         <img src="{% static 'dist/img/cmsl.png' %} " alt="AdminLTE Logo"
             class="brand-image img-circle elevation-3" >
         <span class="brand-text font-weight-light">Admin Panel</span>
@@ -23,8 +23,8 @@
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
                 <li class="nav-item">
-                    {% url 'admin_dashboard' as admin_dashboard %}
-                    <a href="{{admin_dashboard}}" class="nav-link {% if admin_dashboard == request.path %} active {% endif %}">
+                    {% url 'main_dashboard' as main_dashboard %}
+                    <a href="{{main_dashboard}}" class="nav-link {% if main_dashboard == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-home"></i>
                         <p>
                             Home

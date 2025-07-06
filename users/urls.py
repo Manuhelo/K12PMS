@@ -13,7 +13,7 @@ urlpatterns = [
     
 
     # role-based dashboards
-    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('main/dashboard/', views.admin_dashboard, name='main_dashboard'),
     path('procurement/dashboard/', views.procurement_dashboard, name='procurement_dashboard'),
     path('department/dashboard/', views.department_dashboard, name='department_dashboard'),
     path('warehouse/dashboard/', views.warehouse_dashboard, name='warehouse_dashboard'),
