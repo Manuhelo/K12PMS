@@ -19,6 +19,8 @@ def user_login(request):
                 return redirect('procurement_dashboard')
             elif user.role == 'DepartmentUser':
                 return redirect('department_dashboard')
+            elif user.role == 'WarehouseHead':
+                return redirect('warehouse_dashboard')
             elif user.role == 'WarehouseManager':
                 return redirect('warehouse_dashboard')
             else:

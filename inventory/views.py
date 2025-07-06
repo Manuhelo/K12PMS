@@ -7,7 +7,6 @@ from .forms import *
 from products.models import *
 import csv
 from django.http import HttpResponse
-import pandas as pd
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import io
 from django.db.models import Sum, Q
@@ -159,9 +158,17 @@ def upload_warehouses(request):
                 decoded_file = file.read().decode('utf-8').splitlines()
                 reader = csv.DictReader(decoded_file)
                 rows = list(reader)
+
             elif ext in ['xls', 'xlsx']:
-                df = pd.read_excel(file)
-                rows = df.to_dict(orient='records')
+                wb = openpyxl.load_workbook(file)
+                ws = wb.active
+                headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
+
+                rows = []
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    row_dict = dict(zip(headers, row))
+                    rows.append(row_dict)
+
             else:
                 messages.error(request, "Unsupported file type.")
                 return redirect('upload_warehouses')
@@ -492,12 +499,21 @@ def upload_grn_items(request):
         # Read file using pandas
         try:
             if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
+                decoded_file = uploaded_file.read().decode('utf-8').splitlines()
+                reader = csv.DictReader(decoded_file)
+                rows = list(reader)
             elif uploaded_file.name.endswith(('.xls', '.xlsx')):
-                df = pd.read_excel(uploaded_file)
+                wb = openpyxl.load_workbook(uploaded_file)
+                ws = wb.active
+                headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
+
+                rows = []
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    rows.append(dict(zip(headers, row)))
             else:
                 return render(request, 'inventory/grn_upload.html', {
                     'pos': PurchaseOrder.objects.all(),
+                    'warehouses': Warehouse.objects.all(),
                     'error': 'Unsupported file type. Please upload .csv or .xlsx',
                     'page_title': 'Bulk Upload GRN'
                 })
@@ -528,7 +544,7 @@ def upload_grn_items(request):
             qty = q.rfq_item.request_item.quantity  # or use q.quantity if applicable
             po_items_map[product_id] = qty
 
-        for _, row in df.iterrows():
+        for row in rows:
             sku = clean_sku(row.get('SKU Code'))
             grn_qty = safe_int(row.get('GRN Quantity', 0))
             damage_qty = safe_int(row.get('Damage Quantity', 0))
@@ -715,41 +731,71 @@ def delete_stock_request(request, pk):
 def bulk_upload_stock_request(request):
     if request.method == 'POST' and request.FILES.get('excel_file'):
         file = request.FILES['excel_file']
-        df = pd.read_excel(file)
-
-        # Expect columns: warehouse_name, product_sku, quantity_requested, remarks (optional)
         errors = []
 
-        for warehouse_name, group in df.groupby('warehouse_name'):
+        try:
+            wb = openpyxl.load_workbook(file)
+            ws = wb.active
+
+            # Get headers
+            headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
+
+            # Required columns
+            required_cols = ['warehouse_name', 'product_sku', 'quantity_requested']
+            for col in required_cols:
+                if col not in headers:
+                    messages.error(request, f"Missing required column: {col}")
+                    return redirect('bulk_upload_stock_request')
+
+            # Create list of dicts for each row
+            rows = []
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                row_dict = dict(zip(headers, row))
+                rows.append(row_dict)
+
+        except Exception as e:
+            messages.error(request, f"Error reading Excel file: {str(e)}")
+            return redirect('bulk_upload_stock_request')
+
+        # Group by warehouse_name
+        from collections import defaultdict
+        grouped_data = defaultdict(list)
+        for row in rows:
+            warehouse_name = str(row.get('warehouse_name')).strip()
+            grouped_data[warehouse_name].append(row)
+
+        # Process each group
+        for warehouse_name, group_rows in grouped_data.items():
             try:
                 warehouse = Warehouse.objects.get(name=warehouse_name)
             except Warehouse.DoesNotExist:
                 errors.append(f"Warehouse not found: {warehouse_name}")
                 continue
 
-            remarks = group['remarks'].iloc[0] if 'remarks' in group.columns else ""
+            remarks = group_rows[0].get('remarks', '')
             request_obj = StockRequest.objects.create(
                 requesting_warehouse=warehouse,
                 requested_by=request.user,
-                remarks=remarks
+                remarks=remarks or ''
             )
 
-            for _, row in group.iterrows():
+            for row in group_rows:
                 try:
-                    product = EducationalProduct.objects.get(sku=row['product_sku'])
-                    qty = int(row['quantity_requested'])
+                    product = EducationalProduct.objects.get(sku=row.get('product_sku'))
+                    qty = int(row.get('quantity_requested', 0))
                     StockRequestItem.objects.create(
                         stock_request=request_obj,
                         product=product,
                         quantity_requested=qty
                     )
                 except Exception as e:
-                    errors.append(f"Error for SKU {row['product_sku']}: {str(e)}")
+                    errors.append(f"Error for SKU {row.get('product_sku')}: {str(e)}")
 
         if errors:
             messages.warning(request, f"Some errors occurred: {errors}")
         else:
             messages.success(request, "Stock Requests uploaded successfully.")
+
         return redirect('stock_request_list')
 
     return render(request, 'inventory/bulk_upload_stock_request.html')
