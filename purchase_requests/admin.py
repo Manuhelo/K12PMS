@@ -11,7 +11,6 @@ from django.urls import path, reverse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.utils import timezone
-import pandas as pd
 from django.utils.html import format_html
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
@@ -219,10 +218,29 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
                     file = request.FILES['file']
                     filename = file.name.lower()
 
+                    rows = []
+
                     if filename.endswith('.csv'):
-                        df = pd.read_csv(file)
+                        decoded_file = TextIOWrapper(file, encoding='utf-8')
+                        reader = csv.DictReader(decoded_file)
+                        for row in reader:
+                            rows.append({
+                                'sku': row['sku'].strip().upper(),
+                                'quantity': row['quantity'],
+                                'remarks': row.get('remarks', '')
+                            })
                     elif filename.endswith(('.xls', '.xlsx')):
-                        df = pd.read_excel(file)
+                        wb = openpyxl.load_workbook(file)
+                        sheet = wb.active
+                        headers = [cell.value.strip().lower() for cell in sheet[1]]
+
+                        for row in sheet.iter_rows(min_row=2, values_only=True):
+                            row_dict = dict(zip(headers, row))
+                            rows.append({
+                                'sku': str(row_dict['sku']).strip().upper(),
+                                'quantity': row_dict.get('quantity'),
+                                'remarks': row_dict.get('remarks', '')
+                            })
                     else:
                         messages.error(request, "Unsupported file type. Please upload a CSV or Excel file.")
                         return redirect("..")
@@ -230,10 +248,8 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
                     messages.error(request, f"File processing error: {str(e)}")
                     return redirect("..")
                 
-                df.columns = df.columns.str.strip().str.lower()
-
-                df['sku'] = df['sku'].astype(str).str.strip().str.upper()
-                skus = df['sku'].tolist()
+                # Validate SKUs
+                skus = [r['sku'] for r in rows]
 
                 # Normalize DB SKUs as well
                 existing_products_qs = EducationalProduct.objects.filter(sku__in=skus)
@@ -262,13 +278,11 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
                     request_number=request_number
                 )
 
-                for _, row in df.iterrows():
+                for row in rows:
                     sku = row['sku']
-                    item_remarks = row.get('remarks', '')
 
                     try:
-                        raw_qty = str(row.get('quantity', '0')).replace(',', '').strip()
-                        quantity = int(raw_qty)
+                        quantity = int(str(row['quantity']).replace(',', '').strip())
                     except ValueError:
                         messages.error(request, f"Invalid quantity value: {row.get('quantity')} in row: {row.to_dict()}")
                         return redirect("..")
@@ -278,7 +292,7 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
                         purchase_request=purchase_request,
                         product=product,
                         quantity=quantity,
-                        remarks=item_remarks
+                        remarks=row.get('remarks', '')
                     )
 
                 messages.success(request, f"Purchase Request {purchase_request.request_number} created successfully.")

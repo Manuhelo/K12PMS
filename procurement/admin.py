@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.template.response import TemplateResponse
 import csv
 import openpyxl
-import pandas as pd
+from openpyxl import load_workbook
 import io
 from .forms import VendorQuotationUploadForm
 from .models import RFQ, RFQItem, VendorQuotation, VendorBid, PurchaseOrder, DeliveryTracking
@@ -211,19 +211,25 @@ class VendorBidAdmin(admin.ModelAdmin):
                         io_string = io.StringIO(data)
                         reader = csv.DictReader(io_string)
                     elif file_name.endswith(".xlsx") or file_name.endswith(".xls"):
-                        df = pd.read_excel(upload_file)
-                        reader = df.to_dict(orient='records')
+                        wb = load_workbook(upload_file, data_only=True)
+                        sheet = wb.active
+                        headers = [str(cell.value).strip().lower() for cell in sheet[1]]
+                        rows = []
+                        for row in sheet.iter_rows(min_row=2, values_only=True):
+                            row_dict = dict(zip(headers, row))
+                            rows.append(row_dict)
+
                     else:
                         self.message_user(request, "Unsupported file format. Upload CSV or Excel.", level=messages.ERROR)
                         return redirect("..")
                     
                     upload_stats = {}
 
-                    for row in reader:
+                    for row in rows:
                         try:
-                            purchase_request_number = row.get('purchase_request_number')
-                            sku = row.get('sku')
-                            vendor_value = row.get('vendor') or row.get('vendor_id') or row.get('vendor_name')
+                            purchase_request_number = str(row.get('purchase_request_number')).strip()
+                            sku = str(row.get('sku')).strip().upper()
+                            vendor_value = str(row.get('vendor') or row.get('vendor_id') or row.get('vendor_name')).strip()
                             quoted_price = row.get('quoted_price')
                             lead_time_days = row.get('lead_time_days')
                             remarks = row.get('remarks', '')
@@ -306,10 +312,8 @@ class VendorBidAdmin(admin.ModelAdmin):
                         )
                         response['Content-Disposition'] = 'attachment; filename=not_found_skus.xlsx'
 
-                        wb = openpyxl.Workbook()
-                        ws = wb.active
-                        ws.title = "Unmatched Rows"
-
+                        wb = load_workbook(io.BytesIO(), write_only=True)
+                        ws = wb.create_sheet("Unmatched Rows")
                         headers = list(unmatched_rows[0].keys())
                         ws.append(headers)
 
