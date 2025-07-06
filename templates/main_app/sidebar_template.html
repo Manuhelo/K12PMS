@@ -387,7 +387,7 @@
                             </a>
                         </li>
                                                 <li class="nav-item">
-                                                    {% if request.user.user_type in 'warehouse_head warehouse_manager' %}
+                                                    {% if request.user.role in 'WarehouseHead WarehouseManager' %}
                             {% url 'add_course' as add_course %}
                             <a href="{{add_course}}"
                                 class="nav-link  {% if add_course == request.path %} active {% endif %}">
@@ -418,7 +418,7 @@
 
 
                
-                {% if request.user.is_authenticated and request.user.role == "WarehousehHead" %}
+                {% if request.user.is_authenticated and request.user.role == "WarehouseHead" %}
                         <li class="nav-item">
                             {% url 'manage_warehouse' as manage_warehouse %}
                             {% url 'edit_warehouse' subject_id as edit_warehouse %}
