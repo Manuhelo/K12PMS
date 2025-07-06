@@ -12,11 +12,9 @@
     <div class="sidebar">
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-            <div class="image">
-                <img src="{{ request.user.profile_pic}}" class="img-circle elevation-2" alt="User Image">
-            </div>
+            
             <div class="info">
-                <a href="#" class="d-block">{{user}}</a>
+                <a href="#" class="d-block">{{user}} - {{role}}</a>
             </div>
         </div>
 
@@ -25,8 +23,8 @@
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
                 <li class="nav-item">
-                    {% url 'admin_home' as admin_home %}
-                    <a href="{{admin_home}}" class="nav-link {% if admin_home == request.path %} active {% endif %}">
+                    {% url 'admin_dashboard' as admin_dashboard %}
+                    <a href="{{admin_dashboard}}" class="nav-link {% if admin_dashboard == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-home"></i>
                         <p>
                             Home
@@ -35,9 +33,9 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    {% url 'admin_view_profile' as admin_view_profile %}
-                    <a href="{{admin_view_profile}}"
-                        class="nav-link {% if admin_view_profile == request.path %} active {% endif %}">
+                    {% url 'update_profile' as update_profile %}
+                    <a href="{{update_profile}}"
+                        class="nav-link {% if update_profile == request.path %} active {% endif %}">
                         <i class="nav-icon fas fa-address-card"></i>
                         <p>
                             Update Profile
@@ -52,7 +50,7 @@
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-bookmark"></i>
                         <p>
-                            Course
+                            Purchase Request
                             <i class="fas fa-angle-left right"></i>
                         </p>
                     </a>
@@ -63,7 +61,7 @@
                                 class="nav-link  {% if add_course == request.path %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>
-                                    Add Course
+                                    Add Purchase Request
 
                                 </p>
                             </a>
@@ -75,7 +73,7 @@
                                 class="nav-link  {% if edit_course == request.path or manage_course == request.path %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>
-                                    Manage Course
+                                    Manage Purchase Request
 
                                 </p>
                             </a>
@@ -90,7 +88,7 @@
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-book"></i>
                         <p>
-                            Subject
+                            Procurement
                             <i class="fas fa-angle-left right"></i>
                         </p>
                     </a>
@@ -101,7 +99,7 @@
                                 class="nav-link  {% if add_subject == request.path %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>
-                                    Add Subject
+                                    Add Procurement
 
                                 </p>
                             </a>
@@ -113,7 +111,7 @@
                                 class="nav-link  {% if edit_subject == request.path or manage_subject == request.path %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>
-                                    Manage Subject
+                                    Manage Procurement
 
                                 </p>
                             </a>
@@ -130,7 +128,7 @@
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-clock"></i>
                         <p>
-                            Session
+                            Inventory
                             <i class="fas fa-angle-left right"></i>
                         </p>
                     </a>
@@ -142,7 +140,7 @@
                                 class="nav-link  {% if add_session == request.path %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>
-                                    Add Session
+                                    GRN
 
                                 </p>
                             </a>
