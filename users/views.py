@@ -14,7 +14,7 @@ def user_login(request):
             
             # Redirect based on role
             if user.role == 'Admin':
-                return redirect('admin_dashboard')
+                return redirect('main_dashboard')
             elif user.role == 'ProcurementManager':
                 return redirect('procurement_dashboard')
             elif user.role == 'DepartmentUser':
