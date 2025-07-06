@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: django-app
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: gunicorn pms.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: pms.settings
+      - key: PYTHON_VERSION
+        value: 3.10  # or whatever version you're using
+      - key: SECRET_KEY
+        value: your-secret-key-here
+      - key: DEBUG
+        value: "False"
+    staticPublishPath: staticfiles_build/static
