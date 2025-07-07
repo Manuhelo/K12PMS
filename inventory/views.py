@@ -19,6 +19,7 @@ from users.models import CustomUser  # adjust path if needed
 from django.utils.timezone import now
 import openpyxl
 from django.utils import timezone
+from openpyxl import Workbook
 
 
 def scan_po(request):
@@ -799,6 +800,21 @@ def bulk_upload_stock_request(request):
         return redirect('stock_request_list')
 
     return render(request, 'inventory/bulk_upload_stock_request.html')
+
+def download_sample_stock_request_excel(request):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sample Stock Request"
+    ws.append(['warehouse_name', 'product_sku', 'quantity_requested', 'remarks'])
+    ws.append(['Hyderabad WH', '4000001234', 50, 'Urgent'])
+    ws.append(['Hyderabad WH', '4000005678', 30, ''])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=sample_stock_request.xlsx'
+    wb.save(response)
+    return response
 
 
 def stock_request_list(request):

@@ -30,6 +30,7 @@ urlpatterns = [
     #Stock Request
     path('stock-request/create/', create_stock_request, name='create_stock_request'),
     path('stock-request/upload/', bulk_upload_stock_request, name='upload_stock_request_excel'),
+    path('download-sample-template/', download_sample_stock_request_excel, name='download_sample_stock_template'),
     path('stock-request/list/', stock_request_list, name='stock_request_list'),
     path('stock-request/action/', stock_request_action, name='stock_request_action'),
     path('stock-request/<int:request_id>/export/', export_stock_requests_excel, name='export_stock_requests_excel'),
