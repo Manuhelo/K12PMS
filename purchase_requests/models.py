@@ -20,6 +20,7 @@ class PurchaseRequest(models.Model):
     ]
     segment = models.CharField(max_length=10, choices=SEGMENT_CHOICES, blank=False, null=False, verbose_name="Segment")
     request_number = models.CharField(max_length=50, unique=True, blank=True)
+    warehouse = models.ForeignKey('inventory.Warehouse',on_delete=models.CASCADE, null=True, blank=True)
     requested_by = models.ForeignKey(User, on_delete=models.CASCADE)
     description = models.CharField(max_length=300)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')

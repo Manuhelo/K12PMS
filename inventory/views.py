@@ -906,41 +906,141 @@ def export_stock_requests_excel(request, request_id):
     return response
 
 
+# @login_required
+# def stock_transfer_list(request):
+#     # Optionally filter based on user's warehouse
+#     user = request.user
+
+#     if hasattr(user, 'warehouse'):  # assuming this relation exists
+#         transfers = StockTransfer.objects.filter(
+#             from_warehouse=user.warehouse
+#         ) | StockTransfer.objects.filter(
+#             to_warehouse=user.warehouse
+#         )
+#     else:
+#         transfers = StockTransfer.objects.all()
+
+#     return render(request, 'inventory/stock_transfer_list.html', {
+#         'transfers': transfers.order_by('-requested_at'),
+#         'page_title': 'Stock Transfers'
+#     })
+
+
+# from django.views.decorators.http import require_POST
+# from django.core.exceptions import ObjectDoesNotExist
+
+# @login_required
+# @require_POST
+# def complete_stock_transfer(request, transfer_id):
+#     transfer = get_object_or_404(StockTransfer, id=transfer_id)
+#     if transfer.status != 'IN_TRANSIT':
+#         messages.warning(request, "Only transfers in transit can be marked as completed.")
+#         return redirect('stock_transfer_list')
+
+#     try:
+#         transfer.status = 'COMPLETED'
+#         transfer.completed_at = timezone.now()
+#         transfer.save()
+#         messages.success(request, f"Transfer #{transfer.id} marked as COMPLETED.")
+#     except Exception as e:
+#         messages.error(request, f"Error: {e}")
+#     return redirect('stock_transfer_list')
+
+
+# @login_required
+# @require_POST
+# def mark_transfer_in_transit(request, transfer_id):
+#     transfer = get_object_or_404(StockTransfer, id=transfer_id)
+#     if transfer.status != 'PENDING':
+#         messages.warning(request, "Only pending transfers can be moved to transit.")
+#         return redirect('stock_transfer_list')
+
+#     try:
+#         transfer.status = 'IN_TRANSIT'
+#         transfer.approved_by = request.user
+#         transfer.save()
+#         messages.success(request, f"Transfer #{transfer.id} marked as IN TRANSIT.")
+#     except Exception as e:
+#         messages.error(request, f"Error: {e}")
+#     return redirect('stock_transfer_list')
+
+
 @login_required
 def stock_transfer_list(request):
-    # Optionally filter based on user's warehouse
-    user = request.user
-
-    if hasattr(user, 'warehouse'):  # assuming this relation exists
-        transfers = StockTransfer.objects.filter(
-            from_warehouse=user.warehouse
-        ) | StockTransfer.objects.filter(
-            to_warehouse=user.warehouse
-        )
-    else:
-        transfers = StockTransfer.objects.all()
-
+    transfers = StockTransfer.objects.select_related('product', 'from_warehouse', 'to_warehouse').order_by('-requested_at')
     return render(request, 'inventory/stock_transfer_list.html', {
-        'transfers': transfers.order_by('-requested_at'),
+        'transfers': transfers,
         'page_title': 'Stock Transfers'
     })
 
 
-from django.views.decorators.http import require_POST
-
 @login_required
-@require_POST
-def complete_stock_transfer(request, transfer_id):
-    transfer = get_object_or_404(StockTransfer, id=transfer_id)
+def update_stock_transfer_status(request, transfer_id, status):
+    transfer = get_object_or_404(StockTransfer, pk=transfer_id)
 
-    if transfer.status == 'PENDING':
-        transfer.status = 'COMPLETED'
-        transfer.approved_by = request.user
-        transfer.completed_at = timezone.now()
+    status = status.upper()
+    if status not in ['IN_TRANSIT', 'COMPLETED', 'CANCELLED']:
+        messages.error(request, "Invalid status.")
+        return redirect('stock_transfer_list')
+
+    try:
+        if status == 'IN_TRANSIT':
+            # Check from_warehouse stock
+            try:
+                from_item = InventoryItem.objects.get(
+                    product=transfer.product,
+                    warehouse=transfer.from_warehouse
+                )
+            except InventoryItem.DoesNotExist:
+                messages.error(request, f"Inventory record not found for {transfer.from_warehouse.name}")
+                return redirect('stock_transfer_list')
+
+            if from_item.quantity_in_stock < transfer.quantity:
+                messages.error(request, f"Not enough stock in {transfer.from_warehouse.name}")
+                return redirect('stock_transfer_list')
+
+            from_item.quantity_in_stock -= transfer.quantity
+            from_item.save()
+
+            # Log transfer out
+            StockHistory.objects.create(
+                product=transfer.product,
+                warehouse=transfer.from_warehouse,
+                previous_quantity=from_item.quantity_in_stock + transfer.quantity,
+                changed_quantity=-transfer.quantity,
+                new_quantity=from_item.quantity_in_stock,
+                action_type='TRANSFER_OUT',
+                reference_id=f"TRANSFER-{transfer.id}",
+                changed_by=request.user
+            )
+
+        elif status == 'COMPLETED':
+            to_item, _ = InventoryItem.objects.get_or_create(
+                product=transfer.product,
+                warehouse=transfer.to_warehouse
+            )
+            to_item.quantity_in_stock += transfer.quantity
+            to_item.save()
+
+            # Log transfer in
+            StockHistory.objects.create(
+                product=transfer.product,
+                warehouse=transfer.to_warehouse,
+                previous_quantity=to_item.quantity_in_stock - transfer.quantity,
+                changed_quantity=transfer.quantity,
+                new_quantity=to_item.quantity_in_stock,
+                action_type='TRANSFER_IN',
+                reference_id=f"TRANSFER-{transfer.id}",
+                changed_by=request.user
+            )
+
+            transfer.completed_at = timezone.now()
+
+        transfer.status = status
         transfer.save()
 
-        messages.success(request, f"Transfer #{transfer.id} marked as completed.")
-    else:
-        messages.warning(request, "This transfer is already completed or cancelled.")
+        messages.success(request, f"Stock transfer marked as {status}.")
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
 
     return redirect('stock_transfer_list')

@@ -39,7 +39,7 @@ urlpatterns = [
 
     #Stock Transfer
     path('stock-transfers/', stock_transfer_list, name='stock_transfer_list'),
-    path('stock-transfers/complete/<int:transfer_id>/', complete_stock_transfer, name='complete_stock_transfer'),
+    path('stock-transfers/update/<int:transfer_id>/<str:status>/', update_stock_transfer_status, name='update_stock_transfer_status'),
 
     path('po-details/<str:po_number>/', po_details_by_number, name='po_details_by_number'),
     path('receive/<str:po_number>/', receive_po_view, name='receive_goods'),

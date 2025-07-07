@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from products.models import EducationalProduct
-from procurement.models import *
+
 
 User = get_user_model()
 
@@ -129,7 +129,7 @@ class GoodsReceiptItem(models.Model):
 
 
 class POItem(models.Model):
-    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
+    purchase_order = models.ForeignKey('procurement.PurchaseOrder', on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(EducationalProduct, on_delete=models.CASCADE)
     quantity_ordered = models.PositiveIntegerField()
 
@@ -219,40 +219,7 @@ class StockTransfer(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
         super().save(*args, **kwargs)
-
-        if self.status == 'COMPLETED':
-            # Update inventory for both warehouses
-            from_item = InventoryItem.objects.get(product=self.product, warehouse=self.from_warehouse)
-            to_item, _ = InventoryItem.objects.get_or_create(product=self.product, warehouse=self.to_warehouse)
-
-            from_item.quantity_in_stock -= self.quantity
-            to_item.quantity_in_stock += self.quantity
-
-            from_item.save()
-            to_item.save()
-
-            # Record in StockHistory
-            StockHistory.objects.create(
-                product=self.product,
-                previous_quantity=from_item.quantity_in_stock + self.quantity,
-                changed_quantity=-self.quantity,
-                new_quantity=from_item.quantity_in_stock,
-                action_type='TRANSFER_OUT',
-                reference_id=f"TRANSFER-{self.id}",
-                changed_by=self.approved_by or self.requested_by
-            )
-
-            StockHistory.objects.create(
-                product=self.product,
-                previous_quantity=to_item.quantity_in_stock - self.quantity,
-                changed_quantity=self.quantity,
-                new_quantity=to_item.quantity_in_stock,
-                action_type='TRANSFER_IN',
-                reference_id=f"TRANSFER-{self.id}",
-                changed_by=self.approved_by or self.requested_by
-            )
 
 
 class AcademicYear(models.Model):

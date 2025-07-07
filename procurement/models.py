@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from purchase_requests.models import PurchaseRequest, RequestItem
 from vendors.models import Vendor  # if you have vendor app, or define here
 import uuid
+from inventory.models import Warehouse
 
 User = get_user_model()
 
@@ -60,6 +61,7 @@ class VendorQuotation(models.Model):
 
 class PurchaseOrder(models.Model):
     vendor_bid = models.ForeignKey(VendorBid, on_delete=models.CASCADE,null=True, blank=True)
+    Warehouse = models.ForeignKey(Warehouse,on_delete=models.CASCADE,null=True,blank=True)
     po_number = models.CharField(max_length=50, unique=True, blank=True)
     issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     issued_at = models.DateTimeField(auto_now_add=True)

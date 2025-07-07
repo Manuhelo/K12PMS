@@ -1,46 +1,60 @@
-{% extends 'base.html' %}
-{% block content %}
-<h2>{{ page_title }}</h2>
+{% extends 'main_app/base.html' %}
+{% block page_title %}Stock Transfer List{% endblock %}
 
-<table class="table table-bordered mt-3">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Product</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Quantity</th>
-            <th>Status</th>
-            <th>Requested By</th>
-            <th>Approved By</th>
-            <th>Requested At</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for transfer in transfers %}
-        <tr>
-            <td>{{ transfer.id }}</td>
-            <td>{{ transfer.product }}</td>
-            <td>{{ transfer.from_warehouse }}</td>
-            <td>{{ transfer.to_warehouse }}</td>
-            <td>{{ transfer.quantity }}</td>
-            <td>{{ transfer.status }}</td>
-            <td>{{ transfer.requested_by }}</td>
-            <td>{{ transfer.approved_by }}</td>
-            <td>{{ transfer.requested_at }}</td>
-            <td>
-                {% if transfer.status == 'PENDING' %}
-                    <form method="post" action="{% url 'complete_stock_transfer' transfer.id %}">
-                        {% csrf_token %}
-                        <button class="btn btn-sm btn-success">Mark as Completed</button>
-                    </form>
-                {% elif transfer.status == 'COMPLETED' %}
-                    <span class="text-success">Completed</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5>Stock Transfers</h5>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Product</th>
+                    <th>From Warehouse</th>
+                    <th>To Warehouse</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                    <th>Requested By</th>
+                    <th>Approved By</th>
+                    <th>Requested At</th>
+                    <th>Completed At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transfer in transfers %}
+                <tr>
+                    <td>#{{ transfer.id }}</td>
+                    <td>{{ transfer.product.product_description }}</td>
+                    <td>{{ transfer.from_warehouse.name }}</td>
+                    <td>{{ transfer.to_warehouse.name }}</td>
+                    <td>{{ transfer.quantity }}</td>
+                    <td>{{ transfer.status }}</td>
+                    <td>{{ transfer.requested_by }}</td>
+                    <td>{{ transfer.approved_by|default:"—" }}</td>
+                    <td>{{ transfer.requested_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ transfer.completed_at|date:"Y-m-d H:i"|default:"—" }}</td>
+                    <td>
+                        {% if transfer.status == 'PENDING' %}
+                            <a href="{% url 'update_stock_transfer_status' transfer.id 'in_transit' %}" class="btn btn-sm btn-warning" onclick="return confirm('Mark as In Transit?')">Transit</a>
+                        {% elif transfer.status == 'IN_TRANSIT' %}
+                            <a href="{% url 'update_stock_transfer_status' transfer.id 'completed' %}" class="btn btn-sm btn-success" onclick="return confirm('Mark as Completed?')">Complete</a>
+                        {% endif %}
+
+                        {% if transfer.status != 'COMPLETED' and transfer.status != 'CANCELLED' %}
+                            <a href="{% url 'update_stock_transfer_status' transfer.id 'cancelled' %}" class="btn btn-sm btn-danger" onclick="return confirm('Cancel this transfer?')">Cancel</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11">No stock transfers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
