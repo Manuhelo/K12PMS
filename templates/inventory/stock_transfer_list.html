@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ page_title }}</h2>
+
+<table class="table table-bordered mt-3">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Product</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Quantity</th>
+            <th>Status</th>
+            <th>Requested By</th>
+            <th>Approved By</th>
+            <th>Requested At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transfer in transfers %}
+        <tr>
+            <td>{{ transfer.id }}</td>
+            <td>{{ transfer.product }}</td>
+            <td>{{ transfer.from_warehouse }}</td>
+            <td>{{ transfer.to_warehouse }}</td>
+            <td>{{ transfer.quantity }}</td>
+            <td>{{ transfer.status }}</td>
+            <td>{{ transfer.requested_by }}</td>
+            <td>{{ transfer.approved_by }}</td>
+            <td>{{ transfer.requested_at }}</td>
+            <td>
+                {% if transfer.status == 'PENDING' %}
+                    <form method="post" action="{% url 'complete_stock_transfer' transfer.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-success">Mark as Completed</button>
+                    </form>
+                {% elif transfer.status == 'COMPLETED' %}
+                    <span class="text-success">Completed</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

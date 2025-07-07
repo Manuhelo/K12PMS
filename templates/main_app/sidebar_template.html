@@ -325,8 +325,8 @@
                         </li>
                                                 <li class="nav-item">
                                                     {% if request.user.role in 'WarehouseHead WarehouseManager' %}
-                            {% url 'add_course' as add_course %}
-                            <a href="{{add_course}}"
+                            {% url 'stock_transfer_list' as stock_transfer_list %}
+                            <a href="{{stock_transfer_list}}"
                                 class="nav-link  {% if add_course == request.path %} active {% endif %}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>

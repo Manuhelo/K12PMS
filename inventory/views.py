@@ -904,3 +904,43 @@ def export_stock_requests_excel(request, request_id):
     response['Content-Disposition'] = f'attachment; filename=stock_request_{stock_request.id}.xlsx'
     wb.save(response)
     return response
+
+
+@login_required
+def stock_transfer_list(request):
+    # Optionally filter based on user's warehouse
+    user = request.user
+
+    if hasattr(user, 'warehouse'):  # assuming this relation exists
+        transfers = StockTransfer.objects.filter(
+            from_warehouse=user.warehouse
+        ) | StockTransfer.objects.filter(
+            to_warehouse=user.warehouse
+        )
+    else:
+        transfers = StockTransfer.objects.all()
+
+    return render(request, 'inventory/stock_transfer_list.html', {
+        'transfers': transfers.order_by('-requested_at'),
+        'page_title': 'Stock Transfers'
+    })
+
+
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def complete_stock_transfer(request, transfer_id):
+    transfer = get_object_or_404(StockTransfer, id=transfer_id)
+
+    if transfer.status == 'PENDING':
+        transfer.status = 'COMPLETED'
+        transfer.approved_by = request.user
+        transfer.completed_at = timezone.now()
+        transfer.save()
+
+        messages.success(request, f"Transfer #{transfer.id} marked as completed.")
+    else:
+        messages.warning(request, "This transfer is already completed or cancelled.")
+
+    return redirect('stock_transfer_list')

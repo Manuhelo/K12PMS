@@ -37,6 +37,10 @@ urlpatterns = [
     path('stock-request/<int:pk>/', view_stock_request, name='view_stock_request'),
     path('stock-request/<int:pk>/delete/', delete_stock_request, name='delete_stock_request'),
 
+    #Stock Transfer
+    path('stock-transfers/', stock_transfer_list, name='stock_transfer_list'),
+    path('stock-transfers/complete/<int:transfer_id>/', complete_stock_transfer, name='complete_stock_transfer'),
+
     path('po-details/<str:po_number>/', po_details_by_number, name='po_details_by_number'),
     path('receive/<str:po_number>/', receive_po_view, name='receive_goods'),
     # path('ajax/get-po-products/', get_po_products, name='get_po_products'),
