@@ -1,0 +1,166 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Create Purchase Request{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+    <h5>Create Purchase Request</h5>
+    <a href="{% url 'purchase_request_list' %}" class="btn btn-success btn-sm">Manage Requests</a>
+  </div>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+      {% csrf_token %}
+
+      <!-- Segment Field -->
+      <div class="form-group">
+        <label>Segment</label>
+        <select name="segment" class="form-control" required>
+          <option value="">-- Select Segment --</option>
+          {% for code, name in segments %}
+            <option value="{{ code }}" {% if request_obj.segment == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Warehouse Field -->
+      <div class="form-group">
+        <label>Warehouse</label>
+        <select name="warehouse" class="form-control" required>
+          <option value="">-- Select Warehouse --</option>
+          {% for warehouse in warehouses %}
+            <option value="{{ warehouse.id }}" {% if request_obj.warehouse.id == warehouse.id %}selected{% endif %}>{{ warehouse.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Description Field -->
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" name="description" class="form-control" value="{{ request_obj.description|default_if_none:'' }}" required />
+      </div>
+
+      <!-- Dynamic Product Rows -->
+      <table class="table table-bordered" id="product-table">
+        <thead>
+          <tr>
+            <th style="width: 70%;">Product</th>
+            <th style="width: 25%;">Quantity</th>
+            <th style="width: 5%;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if request_items %}
+            {% for item in request_items %}
+            <tr>
+              <td>
+                <select name="product" class="form-control select2" required>
+                  <option></option>
+                  {% for product in products %}
+                    <option value="{{ product.id }}" {% if item.product.id == product.id %}selected{% endif %}>{{ product.product_description }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <input type="number" name="quantity" class="form-control" value="{{ item.quantity }}" min="1" required>
+              </td>
+              <td>
+                <button type="button" class="btn btn-danger btn-sm remove-row">&times;</button>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td>
+                <select name="product" class="form-control select2" required>
+                  <option></option>
+                  {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.product_description }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <input type="number" name="quantity" class="form-control" min="1" required>
+              </td>
+              <td>
+                <button type="button" class="btn btn-danger btn-sm remove-row">&times;</button>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <button type="button" class="btn btn-secondary mb-3" id="add-row">+ Add Another</button>
+
+      <!-- Remarks -->
+      <div class="form-group">
+        <label>Remarks</label>
+        <textarea name="remarks" class="form-control" rows="3">{{ request_obj.remarks|default_if_none:'' }}</textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Submit Request</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block custom_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .select2-container--default .select2-selection--single {
+    height: 38px !important;
+    padding: 5px;
+  }
+  .select2-selection__rendered {
+    line-height: 28px !important;
+  }
+  .select2-selection__arrow {
+    height: 36px !important;
+  }
+</style>
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  function initializeSelect2() {
+    $('.select2').select2({
+      width: '100%',
+      placeholder: 'Search product',
+      allowClear: true,
+    });
+  }
+
+  $(document).ready(function () {
+    initializeSelect2();
+
+    $('#add-row').click(function () {
+      let newRow = `
+        <tr>
+          <td>
+            <select name="product" class="form-control select2" required>
+              <option></option>
+              {% for product in products %}
+                <option value="{{ product.id }}">{{ product.product_description }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <input type="number" name="quantity" class="form-control" min="1" required>
+          </td>
+          <td>
+            <button type="button" class="btn btn-danger btn-sm remove-row">&times;</button>
+          </td>
+        </tr>`;
+      $('#product-table tbody').append(newRow);
+      initializeSelect2();
+    });
+
+    $('#product-table').on('click', '.remove-row', function () {
+      $(this).closest('tr').remove();
+    });
+  });
+</script>
+{% endblock %}

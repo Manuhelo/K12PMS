@@ -1,0 +1,86 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Purchase Requests{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+        <h5>Purchase Requests</h5>
+        <div class="d-flex" style="gap: 0.5rem;"> 
+        <a href="{% url 'bulk_upload_purchase_requests' %}" class="btn btn-success btn-sm">+ Bulk Upload</a>
+        <a href="{% url 'create_purchase_request' %}" class="btn btn-success btn-sm">+ New Request</a>
+        </div>
+    </div>
+    </div>
+    <div class="card-body">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        <form method="get" class="form-inline mb-2">
+    <select name="warehouse" class="form-control mr-2">
+        <option value="">All Warehouses</option>
+        {% for wh in warehouses %}
+        <option value="{{ wh.id }}" {% if wh.id|stringformat:"s" == request.GET.warehouse %}selected{% endif %}>{{ wh.name }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="segment" class="form-control mr-2">
+        <option value="">All Segments</option>
+        {% for code, label in segments %}
+        <option value="{{ code }}" {% if code == request.GET.segment %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="status" class="form-control mr-2">
+        <option value="">All Status</option>
+        {% for code, label in statuses %}
+        <option value="{{ code }}" {% if code == request.GET.status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Request No</th>
+                    <th>Segment</th>
+                    <th>Warehouse</th>
+                    <th>Status</th>
+                    <th>Requested By</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pr in requests %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ pr.request_number }}</td>
+                    <td>{{ pr.segment }}</td>
+                    <td>{{ pr.warehouse.name }}</td>
+                    <td>{{ pr.status }}</td>
+                    <td>{{ pr.requested_by }}</td>
+                    <td>{{ pr.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        <a href="{% url 'purchase_request_detail' pr.id %}" class="btn btn-sm btn-info">View</a>
+                        <a href="{% url 'update_purchase_request' pr.id %}" class="btn btn-sm btn-primary {% if pr.status != 'Draft' %}disabled{% endif %}">Edit</a>
+                        
+                        <form action="{% url 'delete_purchase_request' pr.id %}" method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-danger" onclick="return confirm('Delete this request?')" {% if pr.status != 'Draft' %}disabled{% endif %}>Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8">No requests found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

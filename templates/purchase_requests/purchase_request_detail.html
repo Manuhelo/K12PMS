@@ -1,0 +1,51 @@
+{% extends 'main_app/base.html' %}
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5>Purchase Request #{{ request_obj.request_number }}</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Segment:</strong> {{ request_obj.segment }}</p>
+        <p><strong>Warehouse:</strong> {{ request_obj.warehouse.name }}</p>
+        <p><strong>Description:</strong> {{ request_obj.description }}</p>
+        <p><strong>Status:</strong> {{ request_obj.status }}</p>
+        <p><strong>Requested By:</strong> {{ request_obj.requested_by }}</p>
+        <p><strong>Created At:</strong> {{ request_obj.created_at }}</p>
+
+        <hr>
+        <h6>📦 Requested Items</h6>
+        <table class="table table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>SKU</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.product.sku }}</td>
+                    <td>{{ item.product.product_description }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.remarks|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if history %}
+        <hr>
+        <h6>📜 Status History</h6>
+        <ul>
+            {% for h in history %}
+            <li>{{ h.old_status }} → {{ h.new_status }} by {{ h.changed_by }} on {{ h.changed_at|date:"Y-m-d H:i" }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <a href="{% url 'purchase_request_list' %}" class="btn btn-secondary mt-3">← Back to List</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'main_app/base.html' %}
+{% block page_title %}Update Purchase Request{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5>Update Purchase Request</h5>
+    <a href="{% url 'purchase_request_list' %}" class="btn btn-success btn-sm">Manage Requests</a>
+  </div>
+
+  <div class="card-body">
+    <form method="POST">
+      {% csrf_token %}
+
+      <!-- Segment Field -->
+      <div class="form-group">
+        <label>Segment</label>
+        <select name="segment" class="form-control" required>
+          {% for code, name in segments %}
+            <option value="{{ code }}" {% if request_obj.segment == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Warehouse Field -->
+      <div class="form-group">
+        <label>Warehouse</label>
+        <select name="warehouse" class="form-control" required>
+          {% for wh in warehouses %}
+            <option value="{{ wh.id }}" {% if request_obj.warehouse.id == wh.id %}selected{% endif %}>{{ wh.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" name="description" class="form-control" value="{{ request_obj.description }}" required>
+      </div>
+
+      <!-- Formset Table -->
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Remarks</th>
+            <th>Delete?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ formset.management_form }}
+          {% for form in formset %}
+          <tr>
+            <td>{{ form.product }}</td>
+            <td>{{ form.quantity }}</td>
+            <td>{{ form.remarks }}</td>
+            <td>{{ form.DELETE }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Remarks -->
+      <div class="form-group">
+        <label>Remarks</label>
+        <textarea name="remarks" class="form-control" rows="3">{{ request_obj.remarks }}</textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Update Request</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
