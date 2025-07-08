@@ -37,7 +37,7 @@ def scan_po(request):
     return render(request, 'inventory/scan_po.html')
 
 
-
+@login_required
 def po_details_by_number(request, po_number):
     po = get_object_or_404(PurchaseOrder, po_number=po_number)
     
@@ -63,7 +63,7 @@ def po_details_by_number(request, po_number):
     })
 
 
-
+@login_required
 def receive_po_view(request, po_number):
     po = get_object_or_404(PurchaseOrder, po_number=po_number)
     vendor_bid = po.vendor_bid
@@ -127,6 +127,8 @@ def receive_po_view(request, po_number):
 def not_authorized(request):
     return render(request, 'inventory/403.html', {'page_title': 'Access Denied'})
 
+
+@login_required
 @warehouse_roles_required
 def add_warehouse(request):
     form = WarehouseForm(request.POST or None)
@@ -146,6 +148,7 @@ def add_warehouse(request):
             messages.error(request, "Invalid form data. Please check and try again.")
     return render(request, 'inventory/add_warehouse.html', context)
 
+@login_required
 @warehouse_roles_required
 def upload_warehouses(request):
     if request.method == 'POST' and request.FILES.get('file'):
@@ -199,6 +202,7 @@ def upload_warehouses(request):
 
     return render(request, 'inventory/upload_warehouses.html', {'page_title': 'Upload Warehouses'})
 
+@login_required
 @warehouse_roles_required
 def manage_warehouse(request):
     warehouses = Warehouse.objects.all()
@@ -208,6 +212,7 @@ def manage_warehouse(request):
     }
     return render(request, "inventory/manage_warehouse.html", context)
 
+@login_required
 @warehouse_roles_required
 def edit_warehouse(request, warehouse_id):
     warehouse = get_object_or_404(Warehouse, id=warehouse_id)
@@ -227,6 +232,8 @@ def edit_warehouse(request, warehouse_id):
 
     return render(request, 'inventory/edit_warehouse.html', context)
 
+
+@login_required
 @warehouse_roles_required
 def delete_warehouse(request, warehouse_id):
     warehouse = get_object_or_404(Warehouse, id=warehouse_id)
@@ -251,12 +258,12 @@ def clean_sku(raw):
     except:
         return str(raw).strip()
     
-
+@login_required
 def manage_grns(request):
     grns = GoodsReceipt.objects.all().order_by('-received_at')
     return render(request, 'inventory/grn_list.html', {'grns': grns, 'page_title': 'Manage GRNs'})
 
-
+@login_required
 def grn_detail(request, grn_id):
     grn = get_object_or_404(GoodsReceipt, id=grn_id)
     items = grn.items.select_related('product')  # GoodsReceiptItem objects
@@ -305,7 +312,7 @@ def grn_detail(request, grn_id):
     })
 
 
-
+@login_required
 def delete_grn(request, grn_id):
     grn = get_object_or_404(GoodsReceipt, id=grn_id)
 
@@ -321,7 +328,7 @@ def delete_grn(request, grn_id):
     })
 
 
-
+@login_required
 def download_grn_detail(request, grn_id):
     grn = get_object_or_404(GoodsReceipt, id=grn_id)
     items = grn.items.select_related('product')
@@ -358,7 +365,7 @@ def download_grn_detail(request, grn_id):
 
     return response
 
-
+@login_required
 def download_grn_pdf(request, grn_id):
     grn = get_object_or_404(GoodsReceipt, id=grn_id)
     items = grn.items.select_related('product')
@@ -415,7 +422,7 @@ def download_grn_pdf(request, grn_id):
     return response
 
 
-
+@login_required
 def inventory_list(request):
     # Get all filter options
     warehouses = Warehouse.objects.all()
@@ -477,7 +484,7 @@ def inventory_list(request):
 
     return render(request, 'inventory/inventory_list.html', context)
 
-
+@login_required
 def stock_history_list(request):
     history = StockHistory.objects.select_related('product', 'warehouse', 'changed_by').order_by('-changed_at')
     return render(request, 'inventory/stock_history.html', {
@@ -485,7 +492,7 @@ def stock_history_list(request):
         'page_title': 'Stock Change History'
     })
 
-
+@login_required
 def upload_grn_items(request):
     if request.method == 'POST' and 'upload' in request.POST:
         po_id = request.POST.get('po_id')
@@ -588,6 +595,7 @@ def upload_grn_items(request):
 
 
 # confirm_grn_upload view
+@login_required
 def confirm_grn_upload(request):
     if request.method == 'POST':
         po = get_object_or_404(PurchaseOrder, id=request.POST.get('po_id'))
@@ -669,7 +677,7 @@ def confirm_grn_upload(request):
 
 
 
-
+@login_required
 def po_list_for_grn(request):
     pos = PurchaseOrder.objects.filter(status__in=['Approved', 'Partially Received', 'Delivered'])
     po_data = []
@@ -707,6 +715,7 @@ def po_list_for_grn(request):
 
     return render(request, 'inventory/po_list_for_grn.html', {'po_data': po_data})
 
+@login_required
 def po_grn_entry(request, po_id):
     po = get_object_or_404(PurchaseOrder, id=po_id)
     warehouse = po.Warehouse
@@ -739,7 +748,7 @@ def po_grn_entry(request, po_id):
         'page_title': f'GRN Entry for PO {po.po_number}'
     })
 
-
+@login_required
 def po_grn_detail(request, po_id):
     po = get_object_or_404(PurchaseOrder, id=po_id)
     warehouse = po.Warehouse
@@ -792,29 +801,9 @@ def po_grn_detail(request, po_id):
         'page_title': f'GRN Summary for PO {po.po_number}'
     })
 
-def po_fulfillment_report(request, po_id):
-    po = PurchaseOrder.objects.get(id=po_id)
-    po_items = POItem.objects.filter(purchase_order=po)
 
-    report = []
-    for item in po_items:
-        received = item.grn_records.aggregate(total=Sum('quantity_received'))['total'] or 0
-        pending = item.quantity_ordered - received
-        report.append({
-            'product': item.product.product_description,
-            'ordered': item.quantity_ordered,
-            'received': received,
-            'pending': pending
-        })
-
-    return render(request, "inventory/po_fulfillment.html", {
-        'report': report,
-        'po': po
-    })
-
-
-# @login_required
-# @warehouse_roles_required
+@login_required
+@warehouse_roles_required
 def create_stock_request(request):
     warehouses = Warehouse.objects.all()
     products = EducationalProduct.objects.all()
@@ -854,6 +843,7 @@ def create_stock_request(request):
         'products': products
     })
 
+@login_required
 def view_stock_request(request, pk):
     stock_request = get_object_or_404(StockRequest, pk=pk)
     return render(request, 'inventory/view_stock_request.html', {
@@ -862,12 +852,14 @@ def view_stock_request(request, pk):
         'page_title': 'Stock Request Detail'
     })
 
+@login_required
 def delete_stock_request(request, pk):
     stock_request = get_object_or_404(StockRequest, pk=pk)
     stock_request.delete()
     messages.success(request, "Stock Request deleted successfully.")
     return redirect('stock_request_list')
 
+@login_required
 def bulk_upload_stock_request(request):
     if request.method == 'POST' and request.FILES.get('excel_file'):
         file = request.FILES['excel_file']
@@ -940,6 +932,7 @@ def bulk_upload_stock_request(request):
 
     return render(request, 'inventory/bulk_upload_stock_request.html')
 
+@login_required
 def download_sample_stock_request_excel(request):
     wb = Workbook()
     ws = wb.active
@@ -955,13 +948,13 @@ def download_sample_stock_request_excel(request):
     wb.save(response)
     return response
 
-
+@login_required
 def stock_request_list(request):
     requests = StockRequest.objects.all().order_by('-id')
     warehouses = Warehouse.objects.all()
     return render(request, 'inventory/stock_request_list.html', { 'requests': requests,'warehouses': warehouses,'page_title': 'All Stock Requests' })
 
-
+@login_required
 def is_warehouse_head(user):
     return user.is_authenticated and user.role == 'WarehouseHead'
 
@@ -1017,7 +1010,7 @@ def stock_request_action(request):
 
         return redirect('stock_request_list')
 
-
+@login_required
 def export_stock_requests_excel(request, request_id):
     stock_request = StockRequest.objects.prefetch_related('items').get(id=request_id)
 
