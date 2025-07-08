@@ -302,6 +302,17 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            {% url 'po_list_for_grn' as po_list_for_grn %}
+                            <a href="{{po_list_for_grn}}"
+                                class="nav-link  {% if po_list_for_grn == request.path %} active {% endif %}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>
+                                    PO List
+
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             {% url 'grn_manage' as grn_manage %}
                             <a href="{{grn_manage}}"
                                 class="nav-link  {% if upload_grn_items == request.path %} active {% endif %}">

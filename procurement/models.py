@@ -4,7 +4,8 @@ from django.contrib.auth import get_user_model
 from purchase_requests.models import PurchaseRequest, RequestItem
 from vendors.models import Vendor  # if you have vendor app, or define here
 import uuid
-from inventory.models import Warehouse
+from inventory.models import Warehouse, POItem, GoodsReceiptItem
+from django.db.models import Sum
 
 User = get_user_model()
 
@@ -69,6 +70,7 @@ class PurchaseOrder(models.Model):
         ('Initiated', 'Initiated'),
         ('Approved', 'Approved'),
         ('Dispatched', 'Dispatched'),
+        ('Partially Received', 'Partially Received'),
         ('Delivered', 'Delivered')
     ], default='Initiated')
 
@@ -78,6 +80,35 @@ class PurchaseOrder(models.Model):
             count = PurchaseOrder.objects.filter(issued_at__date=now.date()).count() + 1
             self.po_number = f"PO-{now.strftime('%Y%m%d')}-{count:03d}"
         super().save(*args, **kwargs)
+
+    def check_and_update_status(self):
+        po_items = POItem.objects.filter(purchase_order=self)
+        gr_items = GoodsReceiptItem.objects.filter(receipt__purchase_order=self)
+        all_received = True
+        any_received = False
+
+        for item in po_items:
+            ordered_qty = item.quantity_ordered
+            received_qty = gr_items.filter(product=item.product).aggregate(
+                total=Sum('quantity_received')
+            )['total'] or 0
+
+            # Cap over-receiving
+            received_qty = min(received_qty, ordered_qty)
+
+            if received_qty > 0:
+                any_received = True
+            if received_qty < ordered_qty:
+                all_received = False
+
+        if all_received:
+            self.status = 'Delivered'
+        elif any_received:
+            self.status = 'Partially Received'
+        else:
+            self.status = 'Approved'
+
+        self.save()
 
     def __str__(self):
         return self.po_number

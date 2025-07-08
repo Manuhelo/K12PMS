@@ -1,0 +1,78 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}
+  {{ page_title }}
+{% endblock %}
+
+{% block content %}
+<section class="content">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">GRN Entry</h5>
+      a href="{% url 'po_list_for_grn' %}" class="btn btn-sm btn-outline-secondary">
+        ← Back to PO List
+      </a>
+    </div>
+    <div class="card-body">
+      <p><strong>PO Number:</strong> {{ po.po_number }}</p>
+      <p><strong>Warehouse:</strong> {{ warehouse.name }}</p>
+    </div>
+  </div>
+
+  <form method="POST" action="{% url 'confirm_grn_upload' %}">
+    {% csrf_token %}
+    <input type="hidden" name="po_id" value="{{ po.id }}">
+    <input type="hidden" name="warehouse_id" value="{{ warehouse.id }}">
+
+    <table class="table table-bordered table-striped">
+      <thead class="thead-dark">
+        <tr>
+          <th>SKU Code</th>
+          <th>Product</th>
+          <th>PO Quantity</th>
+          <th>Already Received</th>
+          <th>Now Receiving</th>
+          <th>Damage Quantity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in preview_data %}
+        <tr>
+          <<td>{{ item.sku }}</td>
+          <td>{{ item.product.product_description }}</td>
+          <td>{{ item.po_qty }}</td>
+          <td>{{ item.already_received }}</td>
+
+          <td>
+          <input type="hidden" name="sku[]" value="{{ item.sku }}">
+          <input type="number" name="grn_qty[]" value="{{ item.already_received }}" class="form-control" min="0">
+        </td>
+        <td>
+          <input type="number" name="damage_qty[]" value="0" class="form-control" min="0">
+        </td>
+      </tr>
+      {% endfor %}  
+      </tbody>
+    </table>
+
+    {% if not readonly %}
+      <button type="submit" class="btn btn-success mt-3">Confirm and Submit</button>
+    {% else %}
+      <div class="alert alert-info mt-3">
+        All items in this PO have been fully received. No further entries allowed.
+      </div>
+    {% endif %}
+  </form>
+
+  {% if errors %}
+  <div class="alert alert-danger mt-3">
+    <ul>
+      {% for error in errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

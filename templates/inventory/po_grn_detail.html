@@ -1,0 +1,58 @@
+{% extends 'main_app/base.html' %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="content">
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5>GRN Summary for PO {{ po.po_number }}</h5>
+        <a href="{% url 'po_list_for_grn' %}" class="btn btn-sm btn-outline-secondary">
+          ← Back to PO List
+        </a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <!-- Left side: GRN Info -->
+        <div class="col-md-6">
+          <p><strong>Warehouse:</strong> {{ warehouse.name }}</p>
+          <p><strong>Received By:</strong> {{ received_by }}</p>
+          <p><strong>Last Received At:</strong> {{ received_at|date:"F j, Y, g:i a" }}</p>
+        </div>
+        <!-- Right side: Totals -->
+        <div class="col-md-6 text-right">
+          <p><strong>Total Ordered Qty:</strong> {{ total_ordered }}</p>
+    <p><strong>Total Received Qty:</strong> {{ total_received }}</p>
+    <p><strong>Total Pending Qty:</strong> {{ total_pending }}</p>
+        </div>
+      </div>
+      <table class="table table-bordered mt-3">
+        <thead class="table-light">
+          <tr>
+            <th>SKU Code</th>
+            <th>Product</th>
+            <th>Ordered Qty</th>
+            <th>Received Qty</th>
+            <th>Damaged Qty</th>
+            <th>Pending Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in preview_data %}
+          <tr>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.product.product_description }}</td>
+            <td>{{ item.ordered_qty }}</td>
+            <td>{{ item.received_qty }}</td>
+            <td>{{ item.damage_qty }}</td>
+            <td>{{ item.pending_qty }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

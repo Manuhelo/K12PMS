@@ -587,26 +587,24 @@ def upload_grn_items(request):
     })
 
 
+# confirm_grn_upload view
 def confirm_grn_upload(request):
     if request.method == 'POST':
-        po = PurchaseOrder.objects.get(id=request.POST.get('po_id'))
-        sku_list = request.POST.getlist('sku[]')
-        grn_qty_list = request.POST.getlist('grn_qty[]')
-        damage_qty_list = request.POST.getlist('damage_qty[]')  # New
-
-        warehouse_id = request.POST.get('warehouse_id')
-        warehouse = Warehouse.objects.get(id=warehouse_id)
+        po = get_object_or_404(PurchaseOrder, id=request.POST.get('po_id'))
+        warehouse = get_object_or_404(Warehouse, id=request.POST.get('warehouse_id'))
         user = request.user
 
-        # Create GRN
+        sku_list = request.POST.getlist('sku[]')
+        grn_qty_list = request.POST.getlist('grn_qty[]')
+        damage_qty_list = request.POST.getlist('damage_qty[]')
+
         grn = GoodsReceipt.objects.create(
             purchase_order=po,
             warehouse=warehouse,
             received_by=user
         )
 
-        # Fetch all quotations from the PO's vendor bid
-        quotations = po.vendor_bid.quotations.select_related('rfq_item__request_item', 'rfq_item__request_item__product')
+        quotations = po.vendor_bid.quotations.select_related('rfq_item__request_item__product')
         quotation_map = {
             str(q.rfq_item.request_item.product.sku): {
                 'product': q.rfq_item.request_item.product,
@@ -620,38 +618,179 @@ def confirm_grn_upload(request):
             data = quotation_map.get(cleaned_sku)
 
             if not data:
-                continue  # skip invalid SKUs
+                continue
 
             product = data['product']
             ordered_qty = data['ordered_qty']
+            delta_received = int(qty)
+            delta_damage = int(damage_qty)
 
-            # Get or create POItem
-            po_item, _ = POItem.objects.get_or_create(
-                purchase_order=po,
-                product=product,
-                defaults={'quantity_ordered': ordered_qty}
-            )
+            if delta_received > 0:
+                po_item, _ = POItem.objects.get_or_create(
+                    purchase_order=po,
+                    product=product,
+                    defaults={'quantity_ordered': ordered_qty}
+                )
 
-            # Create GoodsReceiptItem
-            GoodsReceiptItem.objects.create(
-                receipt=grn,
-                product=product,
-                quantity_received=int(qty),
-                damage_return=int(damage_qty)
-            )
+                GoodsReceiptItem.objects.create(
+                    receipt=grn,
+                    product=product,
+                    quantity_received=delta_received,
+                    damage_return=delta_damage
+                )
 
-            # Create GRNRecord
-            GRNRecord.objects.create(
-                po_item=po_item,
-                grn=grn,
-                quantity_received=int(qty),
-                damage_quantity=int(damage_qty)
-            )
+                GRNRecord.objects.create(
+                    po_item=po_item,
+                    grn=grn,
+                    quantity_received=delta_received,
+                    damage_quantity=delta_damage
+                )
+
+        # ✅ Auto-mark PO as Delivered if all items received
+        po_items = POItem.objects.filter(purchase_order=po)
+        all_fulfilled = True
+        for item in po_items:
+            total_received = GoodsReceiptItem.objects.filter(
+                receipt__purchase_order=po,
+                receipt__warehouse=warehouse,
+                product=item.product
+            ).aggregate(total=Sum('quantity_received'))['total'] or 0
+
+            if total_received < item.quantity_ordered:
+                all_fulfilled = False
+
+        if all_fulfilled:
+            po.status = 'Delivered'
+        else:
+            po.status = 'Partially Received'
+        po.save()
 
         return redirect('grn_manage')
 
 
 
+
+def po_list_for_grn(request):
+    pos = PurchaseOrder.objects.filter(status__in=['Approved', 'Partially Received', 'Delivered'])
+    po_data = []
+
+    for po in pos:
+        po_items = POItem.objects.filter(purchase_order=po)
+        total_ordered = po_items.aggregate(total=Sum('quantity_ordered'))['total'] or 0
+
+        # ❗Filter GRNs by this PO and this PO's warehouse
+        gr_items = GoodsReceiptItem.objects.filter(
+            receipt__purchase_order=po,
+            receipt__warehouse=po.Warehouse
+        )
+
+        capped_received = 0
+        for item in po_items:
+            received = gr_items.filter(product=item.product).aggregate(
+                total=Sum('quantity_received'))['total'] or 0
+            capped_received += min(received, item.quantity_ordered)
+
+        progress = int((capped_received / total_ordered) * 100) if total_ordered else 0
+        fully_received = capped_received >= total_ordered
+
+        grns = GoodsReceipt.objects.filter(purchase_order=po, warehouse=po.Warehouse)
+        grn_exists = grns.exists()
+        first_grn = grns.first() if grn_exists else None
+
+        po_data.append({
+            'po': po,
+            'progress': progress,
+            'fully_received': fully_received,
+            'grn_exists': grn_exists,
+            'grn_id': first_grn.id if first_grn else None
+        })
+
+    return render(request, 'inventory/po_list_for_grn.html', {'po_data': po_data})
+
+def po_grn_entry(request, po_id):
+    po = get_object_or_404(PurchaseOrder, id=po_id)
+    warehouse = po.Warehouse
+    quotations = po.vendor_bid.quotations.select_related('rfq_item__request_item__product')
+
+    preview_data = []
+    for q in quotations:
+        product = q.rfq_item.request_item.product
+        po_qty = q.rfq_item.request_item.quantity
+
+        # Calculate already received quantity for this product in this PO and warehouse
+        already_received = GoodsReceiptItem.objects.filter(
+            receipt__purchase_order=po,
+            receipt__warehouse=warehouse,
+            product=product
+        ).aggregate(total=Sum('quantity_received'))['total'] or 0
+
+        preview_data.append({
+            'sku': product.sku,
+            'product': product,
+            'po_qty': po_qty,
+            'already_received': already_received,
+        })
+
+    return render(request, 'inventory/po_grn_preview.html', {
+        'po': po,
+        'warehouse': warehouse,
+        'preview_data': preview_data,
+        'errors': [],
+        'page_title': f'GRN Entry for PO {po.po_number}'
+    })
+
+
+def po_grn_detail(request, po_id):
+    po = get_object_or_404(PurchaseOrder, id=po_id)
+    warehouse = po.Warehouse
+
+    po_items = POItem.objects.filter(purchase_order=po)
+    preview_data = []
+
+    total_ordered = 0
+    total_received = 0
+    total_pending = 0
+
+    for item in po_items:
+        product = item.product
+        ordered_qty = item.quantity_ordered
+
+        agg = GoodsReceiptItem.objects.filter(
+            receipt__purchase_order=po,
+            receipt__warehouse=warehouse,
+            product=product
+        ).aggregate(
+            received_qty=Sum('quantity_received'),
+        )
+
+        received_qty = agg['received_qty'] or 0
+        pending_qty = max(0, ordered_qty - received_qty)
+
+        total_ordered += ordered_qty
+        total_received += received_qty
+        total_pending += pending_qty
+
+        preview_data.append({
+            'sku': product.sku,
+            'product': product,
+            'ordered_qty': ordered_qty,
+            'received_qty': received_qty,
+            'pending_qty': pending_qty
+        })
+
+    latest_grn = po.goodsreceipt_set.order_by('-received_at').first()
+
+    return render(request, 'inventory/po_grn_detail.html', {
+        'po': po,
+        'warehouse': warehouse,
+        'received_by': latest_grn.received_by if latest_grn else None,
+        'received_at': latest_grn.received_at if latest_grn else None,
+        'preview_data': preview_data,
+        'total_ordered': total_ordered,
+        'total_received': total_received,
+        'total_pending': total_pending,
+        'page_title': f'GRN Summary for PO {po.po_number}'
+    })
 
 def po_fulfillment_report(request, po_id):
     po = PurchaseOrder.objects.get(id=po_id)

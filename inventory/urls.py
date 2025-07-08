@@ -20,6 +20,9 @@ urlpatterns = [
     path('grn/<int:grn_id>/delete/', delete_grn, name='delete_grn'),
     path('grn/<int:grn_id>/download/', download_grn_detail, name='download_grn_detail'),
     path('grn/<int:grn_id>/download-pdf/', download_grn_pdf, name='download_grn_pdf'),
+    path('grn/po-list/', po_list_for_grn, name='po_list_for_grn'),
+    path('grn/po/<int:po_id>/', po_grn_entry, name='po_grn_entry'),
+    path('grn/po/<int:po_id>/detail/', po_grn_detail, name='po_grn_detail'),
 
     #inventory
     path('inventory/', inventory_list, name='inventory_list'),

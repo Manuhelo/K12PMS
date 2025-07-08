@@ -105,7 +105,7 @@ class GoodsReceiptItem(models.Model):
     def delete(self, *args, **kwargs):
         try:
         # Roll back stock
-            inventory_item = InventoryItem.objects.get(product=self.product)
+            inventory_item = InventoryItem.objects.filter(product=self.product).first()
             previous = inventory_item.quantity_in_stock
             inventory_item.quantity_in_stock -= self.quantity_received
             inventory_item.save()
