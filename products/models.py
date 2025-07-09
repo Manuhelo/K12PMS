@@ -15,12 +15,14 @@ class EducationalProduct(models.Model):
     )
     CATEGORY_CHOICES = (
         ('book', 'Book'),
+        ('bookbundle', 'Book Bundle'),
         ('kit', 'Kit'),
         ('accessory', 'Accessory'),
     )
     SUBCATEGORY_CHOICES = (
         ('textbook', 'TextBook'),
         ('workbook', 'WorkBook'),
+        ('compositebooks', 'Composite Books'),
         ('notebook', 'NoteBook'),
         ('languagebook', 'LanguageBook'),
         ('dibbook', 'DIBBook'),
