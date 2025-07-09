@@ -4,6 +4,7 @@ from django.contrib import messages
 from .forms import ProfileUpdateForm
 from django.contrib.auth.decorators import login_required
 
+
 def user_login(request):
     if request.method == 'POST':
         username = request.POST.get('username')  # login using username
@@ -48,6 +49,7 @@ def update_profile(request):
         form = ProfileUpdateForm(instance=user)
 
     return render(request, 'users/update_profile.html', {'form': form, 'page_title': 'Update Profile'})
+
 
 
 

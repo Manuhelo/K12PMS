@@ -34,7 +34,7 @@ Approved Purchase Orders - GRN Entry
                         <td>{{ po.po_number }}</td>
                         <td>{{ po.vendor_bid.vendor.name }}</td>
                         <td>{{ po.issued_at|date:"d M Y" }}</td>
-                        <td>{{ po.Warehouse.name }}</td>
+                        <td>{{ po.Warehouse.Warehouse.name }}</td>
                         <td>
                             {% if po.status == "Delivered" %}
                             <span class="badge badge-success">Delivered</span>

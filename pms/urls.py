@@ -32,6 +32,7 @@ urlpatterns = [
     path('', include('users.urls')),
     path('test/', lambda request: HttpResponse("Root test route works!")),  # TEMP TEST
     path('products/', include('products.urls')),
+    path('orders/', include('orders.urls')),
     path('purchase_requests/', include('purchase_requests.urls')),
     path('procurement/', include('procurement.urls')),
     path('inventory/', include('inventory.urls')),
