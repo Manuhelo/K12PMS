@@ -4,12 +4,12 @@ from openpyxl.utils import get_column_letter
 from datetime import datetime
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .models import StudentOrder, OrderSummary
+from .models import StudentOrder, OrderSummary, ProcurementThreshold
 from inventory.models import Warehouse, InventoryItem
 from products.models import EducationalProduct
 from django.db.models import Sum
 from django.http import HttpResponse
-
+from django.contrib.auth.decorators import login_required
 
 
 def upload_student_orders(request):
@@ -176,9 +176,13 @@ def order_inventory_dashboard(request):
     selected_grade = request.GET.get('grade')
     selected_sku = request.GET.get('sku')
 
-    # Base queryset from summary table
-    summaries = OrderSummary.objects.select_related('warehouse', 'sku')
+    # Get thresholds or default values
+    thresholds = ProcurementThreshold.objects.first()
+    low = thresholds.low_threshold if thresholds else 75
+    medium = thresholds.medium_threshold if thresholds else 85
 
+    # Base queryset from OrderSummary
+    summaries = OrderSummary.objects.select_related('warehouse', 'sku')
     if selected_warehouse:
         summaries = summaries.filter(warehouse_id=selected_warehouse)
     if selected_grade:
@@ -186,13 +190,13 @@ def order_inventory_dashboard(request):
     if selected_sku:
         summaries = summaries.filter(sku__sku__icontains=selected_sku)
 
-    # Map OrderSummary for quick lookup
+    # Map OrderSummary by (warehouse_id, sku_id)
     order_map = {
         (s.warehouse_id, s.sku_id): s
         for s in summaries
     }
 
-    # Fetch inventory items
+    # Inventory queryset
     inventory_qs = InventoryItem.objects.select_related('product', 'warehouse')
     if selected_warehouse:
         inventory_qs = inventory_qs.filter(warehouse_id=selected_warehouse)
@@ -201,26 +205,40 @@ def order_inventory_dashboard(request):
 
     dashboard_data = []
 
-    # Step 1: Add all inventory items (even if no orders)
+    # Step 1: Add all inventory rows (even if no orders exist)
     for item in inventory_qs:
         key = (item.warehouse.id, item.product.id)
         order = order_map.get(key)
+        orders_received = order.total_quantity if order else 0
+        stock_available = item.quantity_in_stock
+        shortage = max(0, orders_received - stock_available)
+
+        percent_fulfilled = (stock_available / orders_received * 100) if orders_received else 0
+
+        if percent_fulfilled < low:
+            status = "OK"
+        elif low <= percent_fulfilled < medium:
+            status = "Yet to Procure"
+        else:
+            status = "Mandatory to Procure"
 
         dashboard_data.append({
             'warehouse': item.warehouse.name,
-            'grade': order.grade if order else '',  # blank if no grade available
+            'grade': order.grade if order else '',
             'sku': item.product.sku,
             'product': item.product.product_description,
-            'orders_received': order.total_quantity if order else 0,
-            'stock_available': item.quantity_in_stock,
-            'shortage': max(0, (order.total_quantity if order else 0) - item.quantity_in_stock),
-            'alert': (order.total_quantity if order else 0) > item.quantity_in_stock
+            'orders_received': orders_received,
+            'stock_available': stock_available,
+            'shortage': shortage,
+            'percent_fulfilled': round(percent_fulfilled, 1),
+            'status': status,
+            'alert': shortage > 0,
         })
 
-    # Step 2: Add OrderSummary rows not covered in inventory (like 0 stock)
-    all_inventory_keys = {(i.warehouse.id, i.product.id) for i in inventory_qs}
+    # Step 2: Add orders with no inventory (i.e., 0 stock cases)
+    inventory_keys = {(i.warehouse.id, i.product.id) for i in inventory_qs}
     for key, order in order_map.items():
-        if key not in all_inventory_keys:
+        if key not in inventory_keys:
             dashboard_data.append({
                 'warehouse': order.warehouse.name,
                 'grade': order.grade,
@@ -229,11 +247,16 @@ def order_inventory_dashboard(request):
                 'orders_received': order.total_quantity,
                 'stock_available': 0,
                 'shortage': order.total_quantity,
-                'alert': True
+                'percent_fulfilled': 0,
+                'status': "OK",
+                'alert': True,
             })
 
+    # Filters
     warehouses = Warehouse.objects.all()
     grades = OrderSummary.objects.values_list('grade', flat=True).distinct()
+    if not grades.exists():
+        grades = StudentOrder.objects.values_list('student_class', flat=True).distinct()
 
     return render(request, 'orders/dashboard.html', {
         'summary': dashboard_data,
@@ -242,5 +265,35 @@ def order_inventory_dashboard(request):
         'selected_warehouse': selected_warehouse,
         'selected_grade': selected_grade,
         'selected_sku': selected_sku,
-        'page_title': 'Inventory Planning Dashboard'
+        'page_title': 'Inventory Planning Dashboard',
+        'thresholds': {
+            'low': low,
+            'medium': medium
+        }
+    })
+
+
+
+@login_required
+def update_thresholds(request):
+    threshold = ProcurementThreshold.objects.filter(is_active=True).first()
+    if request.method == 'POST':
+        ok_threshold = int(request.POST.get('ok_threshold'))
+        mandatory_threshold = int(request.POST.get('mandatory_threshold'))
+
+        if threshold:
+            threshold.low_threshold = ok_threshold
+            threshold.medium_threshold = mandatory_threshold
+            threshold.save()
+        else:
+            ProcurementThreshold.objects.create(
+                low_threshold=ok_threshold,
+                medium_threshold=mandatory_threshold,
+                is_active=True
+            )
+        messages.success(request, "Thresholds updated successfully.")
+        return redirect('order_inventory_dashboard')
+
+    return render(request, 'orders/update_thresholds.html', {
+        'threshold': threshold
     })

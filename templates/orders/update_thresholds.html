@@ -1,0 +1,42 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}Update Procurement Thresholds{% endblock %}
+
+{% block content %}
+<div class="card mt-4">
+  <div class="card-header">
+    <h5>Update Procurement Status Thresholds</h5>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">"Yet to Procure" Threshold (%)</label>
+        <input type="number" name="ok_threshold" class="form-control" required
+               value="{{ threshold.ok_threshold|default:75 }}">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">"Mandatory to Procure" Threshold (%)</label>
+        <input type="number" name="mandatory_threshold" class="form-control" required
+               value="{{ threshold.mandatory_threshold|default:85 }}">
+      </div>
+
+      <button type="submit" class="btn btn-primary">Save Thresholds</button>
+      <a href="{% url 'order_inventory_dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+
+    {% if threshold %}
+      <hr>
+      <h6 class="mt-4">Current Threshold Settings:</h6>
+      <ul>
+        <li><strong>Low Threshold:</strong> {{ threshold.low_threshold }}%</li>
+        <li><strong>Medium Threshold:</strong> {{ threshold.medium_threshold }}%</li>
+      </ul>
+      {% else %}
+      <p class="text-muted mt-3">No threshold values found yet. Add them using the form above.</p>
+      {% endif %}
+  </div>
+</div>
+{% endblock %}

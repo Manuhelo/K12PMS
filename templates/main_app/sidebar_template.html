@@ -304,6 +304,19 @@
                                         </a>
                                     </li>
                                 </ul>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        {% url 'update_thresholds' as update_thresholds %}
+                                        <a href="{{update_thresholds}}"
+                                            class="nav-link  {% if update_thresholds == request.path or manage_session == request.path %} active {% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Threshold Update
+
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
                          
 

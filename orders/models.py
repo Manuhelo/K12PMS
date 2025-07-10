@@ -35,3 +35,17 @@ class OrderSummary(models.Model):
 
     def __str__(self):
         return f"{self.warehouse.name} | {self.grade} | {self.sku.sku} → {self.total_quantity}"
+    
+
+class ProcurementThreshold(models.Model):
+    threshold_name = models.CharField(max_length=100, default="Default")
+    low_threshold = models.PositiveIntegerField(default=75)
+    medium_threshold = models.PositiveIntegerField(default=85)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.threshold_name
+
+    class Meta:
+        verbose_name = "Procurement Threshold"
+        verbose_name_plural = "Procurement Thresholds"
