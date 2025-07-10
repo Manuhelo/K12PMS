@@ -15,4 +15,4 @@ class OrderSummaryAdmin(admin.ModelAdmin):
 
 @admin.register(ProcurementThreshold)
 class ProcurementThresholdAdmin(admin.ModelAdmin):
-    list_display = ('threshold_name', 'ok_threshold', 'mandatory_threshold', 'is_active')
+    list_display = ('threshold_name', 'low_threshold', 'medium_threshold', 'is_active')
