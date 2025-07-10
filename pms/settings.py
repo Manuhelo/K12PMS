@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-7!zfyz6)13of)4(*(62+gts+8adzap%q3=-@uz)6q$a(f#021g'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -83,18 +83,18 @@ WSGI_APPLICATION = 'pms.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
-#database_url = os.environ.get("DATABASE_URL")
-# DATABASES ={
-#     'default' : dj_database_url.parse('postgres://neondb_owner:npg_iFk9UoJQ7XRy@ep-divine-resonance-a49ecal3-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require')
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
 # }
+
+
+database_url = os.environ.get("DATABASE_URL")
+DATABASES ={
+    'default' : dj_database_url.parse('postgres://neondb_owner:npg_iFk9UoJQ7XRy@ep-divine-resonance-a49ecal3-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require')
+}
 
 
 # Password validation
