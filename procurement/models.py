@@ -62,7 +62,7 @@ class VendorQuotation(models.Model):
 
 class PurchaseOrder(models.Model):
     vendor_bid = models.ForeignKey(VendorBid, on_delete=models.CASCADE,null=True, blank=True)
-    Warehouse = models.ForeignKey(Warehouse,on_delete=models.CASCADE,null=True,blank=True)
+    warehouse = models.ForeignKey(Warehouse,on_delete=models.CASCADE,null=True,blank=True)
     po_number = models.CharField(max_length=50, unique=True, blank=True)
     issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     issued_at = models.DateTimeField(auto_now_add=True)

@@ -232,14 +232,46 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
                     elif filename.endswith(('.xls', '.xlsx')):
                         wb = openpyxl.load_workbook(file)
                         sheet = wb.active
-                        headers = [cell.value.strip().lower() for cell in sheet[1]]
+                        # Normalize headers with stripping and lowercasing
+                        raw_headers = [str(cell.value).strip().lower() if cell.value else '' for cell in sheet[1]]
+                        print("Parsed headers from Excel:", raw_headers)
+
+                        # Create a mapping from expected field names to actual column indexes
+                        field_map = {
+                            'sku': None,
+                            'quantity': None,
+                            'remarks': None
+                        }
+
+                        for i, header in enumerate(raw_headers):
+                            if 'sku' in header:
+                                field_map['sku'] = i
+                            elif 'quantity' in header:
+                                field_map['quantity'] = i
+                            elif 'remark' in header:
+                                field_map['remarks'] = i
+
+                        # Check for required columns
+                        if field_map['sku'] is None or field_map['quantity'] is None:
+                            messages.error(request, f"Missing required 'sku' or 'quantity' columns. Headers found: {raw_headers}")
+                            return redirect("..")
 
                         for row in sheet.iter_rows(min_row=2, values_only=True):
-                            row_dict = dict(zip(headers, row))
+                            sku_raw = row[field_map['sku']]
+                            quantity_raw = row[field_map['quantity']]
+                            remarks_raw = row[field_map['remarks']] if field_map['remarks'] is not None else ''
+
+                            if not sku_raw:
+                                continue  # Skip empty rows
+
+                            sku = str(sku_raw).strip().upper()
+                            quantity = quantity_raw
+                            remarks = remarks_raw if remarks_raw else ''
+
                             rows.append({
-                                'sku': str(row_dict['sku']).strip().upper(),
-                                'quantity': row_dict.get('quantity'),
-                                'remarks': row_dict.get('remarks', '')
+                                'sku': sku,
+                                'quantity': quantity,
+                                'remarks': remarks
                             })
                     else:
                         messages.error(request, "Unsupported file type. Please upload a CSV or Excel file.")

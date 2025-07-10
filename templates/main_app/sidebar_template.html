@@ -270,17 +270,42 @@
                                     </p>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                {% url 'order_inventory_dashboard' as order_inventory_dashboard %}
-                                <a href="{{order_inventory_dashboard}}"
-                                    class="nav-link {% if order_inventory_dashboard == request.path %} active {% endif %}">
-                                    <i class="nav-icon fas fa-poll"></i>
+                            <li class="nav-item has-treeview">
+                                <a href="#" class="nav-link">
+                                    <i class="nav-icon fas fa-clock"></i>
                                     <p>
                                         Orders Recieved
-
+                                        <i class="fas fa-angle-left right"></i>
                                     </p>
                                 </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        {% url 'order_inventory_dashboard' as order_inventory_dashboard %}
+                                        <a href="{{order_inventory_dashboard}}"
+                                            class="nav-link  {% if order_inventory_dashboard == request.path or manage_session == request.path %} active {% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Orders Summary
+
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        {% url 'upload_order_summary' as upload_order_summary %}
+                                        <a href="{{upload_order_summary}}"
+                                            class="nav-link  {% if upload_order_summary == request.path or manage_session == request.path %} active {% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Orders upload
+
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
+                         
 
 
 
@@ -306,28 +331,7 @@
                 </li>
                 {% endif %}
 
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-clock"></i>
-                        <p>
-                            Stock Request
-                            <i class="fas fa-angle-left right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            {% url 'stock_request_list' as stock_request_list %}
-                            <a href="{{stock_request_list}}"
-                                class="nav-link  {% if edit_session == request.path or manage_session == request.path %} active {% endif %}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>
-                                    Manage Stock Request
-
-                                </p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+            
 
 
 
@@ -536,16 +540,41 @@
                                     </p>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                {% url 'order_inventory_dashboard' as order_inventory_dashboard %}
-                                <a href="{{order_inventory_dashboard}}"
-                                    class="nav-link {% if order_inventory_dashboard == request.path %} active {% endif %}">
-                                    <i class="nav-icon fas fa-poll"></i>
+
+                            <li class="nav-item has-treeview">
+                                <a href="#" class="nav-link">
+                                    <i class="nav-icon fas fa-clock"></i>
                                     <p>
                                         Orders Recieved
-
+                                        <i class="fas fa-angle-left right"></i>
                                     </p>
                                 </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        {% url 'order_inventory_dashboard' as order_inventory_dashboard %}
+                                        <a href="{{order_inventory_dashboard}}"
+                                            class="nav-link  {% if order_inventory_dashboard == request.path or manage_session == request.path %} active {% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Orders Summary
+
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        {% url 'upload_order_summary' as upload_order_summary %}
+                                        <a href="{{upload_order_summary}}"
+                                            class="nav-link  {% if upload_order_summary == request.path or manage_session == request.path %} active {% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Orders upload
+
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
 

@@ -8,11 +8,13 @@
 {% block content %}
 <section class="content">
   <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
       <h5 class="mb-0">GRN Entry</h5>
-      a href="{% url 'po_list_for_grn' %}" class="btn btn-sm btn-outline-secondary">
-        ← Back to PO List
-      </a>
+         <a href="{% url 'po_list_for_grn' %}" class="btn btn-sm btn-outline-secondary">
+          ← Back to PO List
+        </a>
+</div>
     </div>
     <div class="card-body">
       <p><strong>PO Number:</strong> {{ po.po_number }}</p>
@@ -32,21 +34,21 @@
           <th>Product</th>
           <th>PO Quantity</th>
           <th>Already Received</th>
-          <th>Now Receiving</th>
+          <th>Now Received</th>
           <th>Damage Quantity</th>
         </tr>
       </thead>
       <tbody>
         {% for item in preview_data %}
         <tr>
-          <<td>{{ item.sku }}</td>
+          <td>{{ item.sku }}</td>
           <td>{{ item.product.product_description }}</td>
           <td>{{ item.po_qty }}</td>
           <td>{{ item.already_received }}</td>
 
           <td>
           <input type="hidden" name="sku[]" value="{{ item.sku }}">
-          <input type="number" name="grn_qty[]" value="{{ item.already_received }}" class="form-control" min="0">
+          <input type="number" name="grn_qty[]" value="0" class="form-control" min="0">
         </td>
         <td>
           <input type="number" name="damage_qty[]" value="0" class="form-control" min="0">

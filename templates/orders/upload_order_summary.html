@@ -1,0 +1,40 @@
+{% extends 'main_app/base.html' %}
+{% block content %}
+<div class="card p-4">
+  <h4>Upload Order Summary</h4>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+      <input type="file" name="file" required class="form-control">
+    </div>
+    <button class="btn btn-success">Upload</button>
+  </form>
+
+  <hr>
+  <h6>Expected Format</h6>
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Branch Name</th>
+        <th>Grade</th>
+        <th>SKU Code</th>
+        <th>Quantity</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Hyderabad Branch</td>
+        <td>Grade 1</td>
+        <td>4000008632</td>
+        <td>1200</td>
+      </tr>
+      <tr>
+        <td>Hyderabad Branch</td>
+        <td>Grade 2</td>
+        <td>4000008758</td>
+        <td>900</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

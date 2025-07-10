@@ -666,10 +666,11 @@ def confirm_grn_upload(request):
 
             if total_received < item.quantity_ordered:
                 all_fulfilled = False
+                break
 
         if all_fulfilled:
             po.status = 'Delivered'
-        else:
+        elif GoodsReceiptItem.objects.filter(receipt__purchase_order=po).exists():
             po.status = 'Partially Received'
         po.save()
 
@@ -689,7 +690,7 @@ def po_list_for_grn(request):
         # ❗Filter GRNs by this PO and this PO's warehouse
         gr_items = GoodsReceiptItem.objects.filter(
             receipt__purchase_order=po,
-            receipt__warehouse=po.Warehouse
+            receipt__warehouse=po.warehouse
         )
 
         capped_received = 0
@@ -701,7 +702,7 @@ def po_list_for_grn(request):
         progress = int((capped_received / total_ordered) * 100) if total_ordered else 0
         fully_received = capped_received >= total_ordered
 
-        grns = GoodsReceipt.objects.filter(purchase_order=po, warehouse=po.Warehouse)
+        grns = GoodsReceipt.objects.filter(purchase_order=po, warehouse=po.warehouse)
         grn_exists = grns.exists()
         first_grn = grns.first() if grn_exists else None
 
@@ -718,7 +719,7 @@ def po_list_for_grn(request):
 @login_required
 def po_grn_entry(request, po_id):
     po = get_object_or_404(PurchaseOrder, id=po_id)
-    warehouse = po.Warehouse
+    warehouse = po.warehouse
     quotations = po.vendor_bid.quotations.select_related('rfq_item__request_item__product')
 
     preview_data = []
@@ -751,7 +752,7 @@ def po_grn_entry(request, po_id):
 @login_required
 def po_grn_detail(request, po_id):
     po = get_object_or_404(PurchaseOrder, id=po_id)
-    warehouse = po.Warehouse
+    warehouse = po.warehouse
 
     po_items = POItem.objects.filter(purchase_order=po)
     preview_data = []

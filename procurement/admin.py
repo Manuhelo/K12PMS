@@ -206,15 +206,18 @@ class VendorBidAdmin(admin.ModelAdmin):
                 unmatched_rows = []  # For rows with SKUs not found
 
                 try:
+                    rows = []
                     if file_name.endswith(".csv"):
                         data = upload_file.read().decode('utf-8')
                         io_string = io.StringIO(data)
                         reader = csv.DictReader(io_string)
+                        for row in reader:
+                                    rows.append(row)
                     elif file_name.endswith(".xlsx") or file_name.endswith(".xls"):
                         wb = load_workbook(upload_file, data_only=True)
                         sheet = wb.active
                         headers = [str(cell.value).strip().lower() for cell in sheet[1]]
-                        rows = []
+                        
                         for row in sheet.iter_rows(min_row=2, values_only=True):
                             row_dict = dict(zip(headers, row))
                             rows.append(row_dict)
