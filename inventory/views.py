@@ -670,7 +670,7 @@ def confirm_grn_upload(request):
 
         if all_fulfilled:
             po.status = 'Delivered'
-        elif GoodsReceiptItem.objects.filter(receipt__purchase_order=po).exists():
+        elif GoodsReceiptItem.objects.filter(receipt__purchase_order=po, receipt__warehouse=warehouse).exists():
             po.status = 'Partially Received'
         po.save()
 
@@ -755,15 +755,17 @@ def po_grn_detail(request, po_id):
     warehouse = po.warehouse
 
     po_items = POItem.objects.filter(purchase_order=po)
+    print(f"PO Items Count: {po_items.count()}")
     preview_data = []
 
-    total_ordered = 0
+    total_ordered = 0   
     total_received = 0
     total_pending = 0
 
     for item in po_items:
         product = item.product
         ordered_qty = item.quantity_ordered
+        print(item.product, item.quantity_ordered)
 
         agg = GoodsReceiptItem.objects.filter(
             receipt__purchase_order=po,

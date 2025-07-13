@@ -171,51 +171,78 @@ def upload_order_summary(request):
 
 
 def order_inventory_dashboard(request):
-    # Get filters
     selected_warehouse = request.GET.get('warehouse')
     selected_grade = request.GET.get('grade')
     selected_sku = request.GET.get('sku')
 
-    # Get thresholds or default values
+    # Load thresholds
     thresholds = ProcurementThreshold.objects.first()
     low = thresholds.low_threshold if thresholds else 75
     medium = thresholds.medium_threshold if thresholds else 85
 
-    # Base queryset from OrderSummary
-    summaries = OrderSummary.objects.select_related('warehouse', 'sku')
-    if selected_warehouse:
-        summaries = summaries.filter(warehouse_id=selected_warehouse)
-    if selected_grade:
-        summaries = summaries.filter(grade__iexact=selected_grade)
-    if selected_sku:
-        summaries = summaries.filter(sku__sku__icontains=selected_sku)
+    print("Selected grade from request:", selected_grade)
 
-    # Map OrderSummary by (warehouse_id, sku_id)
+    # Fetch OrderSummary data
+    order_qs = OrderSummary.objects.select_related('warehouse', 'sku')
+
+    if selected_warehouse:
+        order_qs = order_qs.filter(warehouse_id=selected_warehouse)
+    if selected_grade and selected_grade != "None":
+        order_qs = order_qs.filter(grade__iexact=selected_grade.strip())
+    if selected_sku:
+        order_qs = order_qs.filter(sku__sku__icontains=selected_sku)
+
+    print("Order count after grade filter:", order_qs.count())
+
     order_map = {
-        (s.warehouse_id, s.sku_id): s
-        for s in summaries
+        (o.warehouse.id, o.sku.sku): o
+        for o in order_qs
+        if o.warehouse and o.sku
     }
 
-    # Inventory queryset
+    # Fetch Inventory data
     inventory_qs = InventoryItem.objects.select_related('product', 'warehouse')
+
     if selected_warehouse:
         inventory_qs = inventory_qs.filter(warehouse_id=selected_warehouse)
     if selected_sku:
         inventory_qs = inventory_qs.filter(product__sku__icontains=selected_sku)
 
+    inventory_map = {
+        (i.warehouse.id, i.product.sku): i
+        for i in inventory_qs
+        if i.warehouse and i.product
+    }
+
+    # Combine all keys
+    all_keys = set(order_map.keys()) | set(inventory_map.keys())
+    print("Order keys:", list(order_map.keys()))
+    print("Inventory keys:", list(inventory_map.keys()))
+    print("All keys:", list(all_keys))
+
     dashboard_data = []
 
-    # Step 1: Add all inventory rows (even if no orders exist)
-    for item in inventory_qs:
-        key = (item.warehouse.id, item.product.id)
+    for key in all_keys:
+        warehouse_id, sku = key
         order = order_map.get(key)
+        inventory = inventory_map.get(key)
+
+        warehouse_name = order.warehouse.name if order else inventory.warehouse.name
+        grade = order.grade if order else ''
+        product_name = order.sku.product_description if order else inventory.product.product_description
+
         orders_received = order.total_quantity if order else 0
-        stock_available = item.quantity_in_stock
+        stock_available = inventory.quantity_in_stock if inventory else 0
+
+        percent_fulfilled = (orders_received / stock_available * 100) if stock_available > 0 else 0
         shortage = max(0, orders_received - stock_available)
 
-        percent_fulfilled = (stock_available / orders_received * 100) if orders_received else 0
-
-        if percent_fulfilled < low:
+        # Status logic
+        if orders_received == 0 and stock_available > 0:
+            status = "Stock Available, No Orders"
+        elif orders_received > 0 and stock_available == 0:
+            status = "Need to Procure"
+        elif percent_fulfilled < low:
             status = "OK"
         elif low <= percent_fulfilled < medium:
             status = "Yet to Procure"
@@ -223,34 +250,17 @@ def order_inventory_dashboard(request):
             status = "Mandatory to Procure"
 
         dashboard_data.append({
-            'warehouse': item.warehouse.name,
-            'grade': order.grade if order else '',
-            'sku': item.product.sku,
-            'product': item.product.product_description,
+            'warehouse': warehouse_name,
+            'grade': grade,
+            'sku': sku,
+            'product': product_name,
             'orders_received': orders_received,
             'stock_available': stock_available,
             'shortage': shortage,
             'percent_fulfilled': round(percent_fulfilled, 1),
             'status': status,
-            'alert': shortage > 0,
+            'alert': status != "OK"
         })
-
-    # Step 2: Add orders with no inventory (i.e., 0 stock cases)
-    inventory_keys = {(i.warehouse.id, i.product.id) for i in inventory_qs}
-    for key, order in order_map.items():
-        if key not in inventory_keys:
-            dashboard_data.append({
-                'warehouse': order.warehouse.name,
-                'grade': order.grade,
-                'sku': order.sku.sku,
-                'product': order.sku.product_description,
-                'orders_received': order.total_quantity,
-                'stock_available': 0,
-                'shortage': order.total_quantity,
-                'percent_fulfilled': 0,
-                'status': "OK",
-                'alert': True,
-            })
 
     # Filters
     warehouses = Warehouse.objects.all()
@@ -270,7 +280,7 @@ def order_inventory_dashboard(request):
             'low': low,
             'medium': medium
         }
-    })
+    })  
 
 
 
