@@ -7,4 +7,5 @@ urlpatterns = [
     path('dashboard/thresholds/', views.update_thresholds, name='update_thresholds'),
     path('orders/upload/sample/', views.download_student_order_sample, name='download_student_order_sample'),
     path('dashboard/', views.order_inventory_dashboard, name='order_inventory_dashboard'),
+    path('order-summary/', views.order_summary_view, name='order_summary_filtered'),
 ]

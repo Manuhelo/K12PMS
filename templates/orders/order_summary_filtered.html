@@ -1,0 +1,165 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <form method="GET" class="row g-2 align-items-end">
+      <!-- Warehouse Filter -->
+      <div class="col-md-2">
+        <label for="warehouse">Warehouse</label>
+        <select name="warehouse" multiple class="form-control select2" id="warehouse">
+          {% for opt in warehouses %}
+            <option value="{{ opt.id }}" {% if opt.id|stringformat:"s" in selected_warehouses %}selected{% endif %}>{{ opt.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Grade Filter -->
+      <div class="col-md-2">
+        <label for="grade">Grade</label>
+        <select name="grade" multiple class="form-control select2" id="grade">
+          {% for opt in grades %}
+            <option value="{{ opt }}" {% if opt in selected_grades %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Volume Filter -->
+      <div class="col-md-2">
+        <label for="volume">Volume</label>
+        <select name="volume" multiple class="form-control select2" id="volume">
+          {% for opt in volumes %}
+            <option value="{{ opt }}" {% if opt in selected_volumes %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Category Filter -->
+      <div class="col-md-2">
+        <label for="category">Category</label>
+        <select name="category" multiple class="form-control select2" id="category">
+          {% for opt in categories %}
+            <option value="{{ opt }}" {% if opt in selected_categories %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Subcategory Filter -->
+      <div class="col-md-2">
+        <label for="subcategory">Subcategory</label>
+        <select name="subcategory" multiple class="form-control select2" id="subcategory">
+          {% for opt in subcategories %}
+            <option value="{{ opt }}" {% if opt in selected_subcategories %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Filter and Download -->
+      <div class="col-md-2 text-end">
+        <button type="submit" class="btn btn-primary w-100 mb-2">Filter</button>
+        <button type="submit" name="download" value="1" class="btn btn-success w-100">Download CSV</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="order-summary-table" class="table table-bordered table-striped display">
+        <thead class="thead-dark">
+          <tr>
+            <th>Warehouse</th>
+            <th>SKU</th>
+            <th>Description</th>
+            <th>Subcategory</th>
+            <th>Grade</th>
+            <th>Volume</th>
+            <th>Order  Quantity</th>
+            <th>Stock Available</th>  <!-- ✅ New Column -->
+            <th>%</th>
+            <th>Shortage</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order_summaries %}
+          <tr>
+            <td>{{ item.warehouse.name }}</td>
+            <td>{{ item.sku.sku }}</td>
+            <td>{{ item.sku.product_description }}</td>
+            <td>{{ item.sku.sub_category }}</td>
+            <td>{{ item.grade }}</td>
+            <td>{{ item.sku.volume }}</td>
+            <td class="text-end">{{ item.total_quantity }}</td>
+            <td class="text-end">{{ item.stock_available }}</td>
+            <td class="text-end">{{ item.percent_fulfilled }}%</td>
+            <td class="text-end">{{ item.shortage }}</td>
+            <td class="text-end">{{ item.procurement_status }}</td>
+            
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center">No order summary records found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block custom_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<style>
+  .select2-container--default .select2-selection--multiple {
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    min-height: 38px;
+    max-height: 70px;
+    overflow-y: auto;
+  }
+
+  .select2-selection__rendered {
+    display: block;
+    max-height: 65px;
+    overflow-y: auto;
+  }
+
+  .select2-selection__choice {
+    background-color: #007bff !important;
+    color: #fff !important;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  label {
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>
+  $(document).ready(function () {
+    $('.select2').select2({
+      width: '100%',
+      placeholder: "Select one or more",
+      allowClear: true
+    });
+
+    $('#order-summary-table').DataTable({
+      pageLength: 25,
+      order: [[0, 'asc']],  // Default sort by Warehouse
+      columnDefs: [
+        { targets: [6,7,8,9], className: 'text-end' }  // Align numeric columns to right
+      ]
+    });
+  });
+</script>
+{% endblock %}

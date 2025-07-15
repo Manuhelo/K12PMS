@@ -575,6 +575,19 @@
                                         </a>
                                     </li>
                                 </ul>
+                                   <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        {% url 'order_summary_filtered' as order_summary_filtered %}
+                                        <a href="{{order_summary_filtered}}"
+                                            class="nav-link  {% if order_summary_filtered == request.path or manage_session == request.path %} active {% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Orders List
+
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
                                         {% url 'upload_order_summary' as upload_order_summary %}

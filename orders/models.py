@@ -49,3 +49,17 @@ class ProcurementThreshold(models.Model):
     class Meta:
         verbose_name = "Procurement Threshold"
         verbose_name_plural = "Procurement Thresholds"
+
+class OrderSummary(models.Model):
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+    grade = models.CharField(max_length=100)  # e.g., 'Grade 1', 'Grade 2'
+    sku = models.ForeignKey(EducationalProduct, on_delete=models.CASCADE)
+    total_quantity = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('warehouse', 'grade', 'sku')
+        verbose_name = "Order Summary"
+        verbose_name_plural = "Order Summaries"
+
+    def __str__(self):
+        return f"{self.warehouse.name} | {self.grade} | {self.sku.sku} → {self.total_quantity}"

@@ -9,6 +9,8 @@ from inventory.models import Warehouse, InventoryItem
 from products.models import EducationalProduct
 from django.db.models import Sum
 from django.http import HttpResponse
+from functools import reduce
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 
 
@@ -175,24 +177,20 @@ def order_inventory_dashboard(request):
     selected_grade = request.GET.get('grade')
     selected_sku = request.GET.get('sku')
 
-    # Load thresholds
+    # Thresholds
     thresholds = ProcurementThreshold.objects.first()
     low = thresholds.low_threshold if thresholds else 75
     medium = thresholds.medium_threshold if thresholds else 85
 
-    print("Selected grade from request:", selected_grade)
-
-    # Fetch OrderSummary data
+    # === ORDER DATA ===
     order_qs = OrderSummary.objects.select_related('warehouse', 'sku')
 
     if selected_warehouse:
         order_qs = order_qs.filter(warehouse_id=selected_warehouse)
-    if selected_grade and selected_grade != "None":
+    if selected_grade and selected_grade.lower() != "none":
         order_qs = order_qs.filter(grade__iexact=selected_grade.strip())
     if selected_sku:
         order_qs = order_qs.filter(sku__sku__icontains=selected_sku)
-
-    print("Order count after grade filter:", order_qs.count())
 
     order_map = {
         (o.warehouse.id, o.sku.sku): o
@@ -200,9 +198,8 @@ def order_inventory_dashboard(request):
         if o.warehouse and o.sku
     }
 
-    # Fetch Inventory data
+    # === INVENTORY DATA ===
     inventory_qs = InventoryItem.objects.select_related('product', 'warehouse')
-
     if selected_warehouse:
         inventory_qs = inventory_qs.filter(warehouse_id=selected_warehouse)
     if selected_sku:
@@ -214,30 +211,23 @@ def order_inventory_dashboard(request):
         if i.warehouse and i.product
     }
 
-    # Combine all keys
-    all_keys = set(order_map.keys()) | set(inventory_map.keys())
-    print("Order keys:", list(order_map.keys()))
-    print("Inventory keys:", list(inventory_map.keys()))
-    print("All keys:", list(all_keys))
-
     dashboard_data = []
 
-    for key in all_keys:
-        warehouse_id, sku = key
-        order = order_map.get(key)
+    for key in order_map.keys():
+        order = order_map[key]
         inventory = inventory_map.get(key)
 
-        warehouse_name = order.warehouse.name if order else inventory.warehouse.name
-        grade = order.grade if order else ''
-        product_name = order.sku.product_description if order else inventory.product.product_description
+        warehouse_name = order.warehouse.name
+        grade = order.grade
+        product_name = order.sku.product_description
+        sku = order.sku.sku
 
-        orders_received = order.total_quantity if order else 0
+        orders_received = order.total_quantity or 0
         stock_available = inventory.quantity_in_stock if inventory else 0
 
         percent_fulfilled = (orders_received / stock_available * 100) if stock_available > 0 else 0
         shortage = max(0, orders_received - stock_available)
 
-        # Status logic
         if orders_received == 0 and stock_available > 0:
             status = "Stock Available, No Orders"
         elif orders_received > 0 and stock_available == 0:
@@ -262,11 +252,11 @@ def order_inventory_dashboard(request):
             'alert': status != "OK"
         })
 
-    # Filters
+    # === FILTER VALUES ===
     warehouses = Warehouse.objects.all()
-    grades = OrderSummary.objects.values_list('grade', flat=True).distinct()
+    grades = OrderSummary.objects.values_list('grade', flat=True).distinct().order_by('grade')
     if not grades.exists():
-        grades = StudentOrder.objects.values_list('student_class', flat=True).distinct()
+        grades = StudentOrder.objects.values_list('student_class', flat=True).distinct().order_by('student_class')
 
     return render(request, 'orders/dashboard.html', {
         'summary': dashboard_data,
@@ -307,3 +297,192 @@ def update_thresholds(request):
     return render(request, 'orders/update_thresholds.html', {
         'threshold': threshold
     })
+
+
+def order_summary_view(request):
+    selected_warehouses = [w for w in request.GET.getlist('warehouse') if w]
+    selected_grades = [g for g in request.GET.getlist('grade') if g]
+    selected_volumes = [v for v in request.GET.getlist('volume') if v]
+    selected_categories = [c for c in request.GET.getlist('category') if c]
+    selected_subcategories = [s for s in request.GET.getlist('subcategory') if s]
+
+    order_qs = OrderSummary.objects.select_related('sku', 'warehouse')
+
+    if selected_warehouses:
+        order_qs = order_qs.filter(warehouse_id__in=selected_warehouses)
+    if selected_grades:
+        order_qs = order_qs.filter(grade__in=selected_grades)
+    if selected_volumes:
+        order_qs = order_qs.filter(sku__volume__in=selected_volumes)
+    if selected_categories:
+        order_qs = order_qs.filter(sku__category__in=selected_categories)
+    if selected_subcategories:
+        order_qs = order_qs.filter(sku__sub_category__in=selected_subcategories)
+
+    print(order_qs.query)
+
+    # # Build a map of (warehouse_id, product_id) → stock quantity
+    # inventory_qs = InventoryItem.objects.values('warehouse_id', 'product_id', 'quantity_in_stock')
+    # inventory_map = {
+    #     (item['warehouse_id'], item['product_id']): item['quantity_in_stock']
+    #     for item in inventory_qs
+    # }
+
+    # Build a filtered inventory map only for the relevant warehouse + SKU IDs
+    relevant_keys = set((order.warehouse.id, order.sku.id) for order in order_qs)
+
+    if relevant_keys:
+        inventory_qs = InventoryItem.objects.filter(
+            reduce(lambda q1, q2: q1 | q2, [
+                Q(warehouse_id=w_id, product_id=p_id)
+                for (w_id, p_id) in relevant_keys
+            ])
+        ).values('warehouse_id', 'product_id', 'quantity_in_stock')
+    else:
+        inventory_qs = InventoryItem.objects.none()
+
+    inventory_map = {
+        (item['warehouse_id'], item['product_id']): item['quantity_in_stock']
+        for item in inventory_qs
+    }
+ 
+
+    LOW_THRESHOLD = 75
+    MEDIUM_THRESHOLD = 85
+
+    # Add stock info to each OrderSummary object
+    for order in order_qs:
+        #print(f"LOOKUP: ({order.warehouse.id}, {order.sku.id})")
+        #print(f"{order.warehouse} | {order.grade} | {order.sku.sku} | Qty: {order.total_quantity} | Stock: {getattr(order, 'stock_available', 0)}")
+        key = (order.warehouse.id, order.sku.id)
+        stock_available = inventory_map.get(key, 0)
+        order.stock_available = stock_available
+
+        orders_received = order.total_quantity
+
+        percent_fulfilled = (orders_received / stock_available * 100) if stock_available > 0 else 0
+        shortage = max(0, orders_received - stock_available)
+
+        if orders_received == 0 and stock_available > 0:
+            status = "Stock Available, No Orders"
+        elif orders_received > 0 and stock_available == 0:
+            status = "Need to Procure"
+        elif percent_fulfilled < LOW_THRESHOLD:
+            status = "OK"
+        elif LOW_THRESHOLD <= percent_fulfilled < MEDIUM_THRESHOLD:
+            status = "Yet to Procure"
+        else:
+            status = "Mandatory to Procure"
+
+        # Attach to object (so you can use in template)
+        order.percent_fulfilled = round(percent_fulfilled, 2)
+        order.shortage = shortage
+        order.procurement_status = status
+
+
+    if request.GET.get('download') == '1':
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="order_summary.csv"'
+
+            writer = csv.writer(response)
+            writer.writerow([
+                'Warehouse', 'SKU', 'Description', 'Subcategory', 'Grade',
+                'Volume', 'Order Quantity', 'Stock Available', '% Fulfilled',
+                'Shortage', 'Procurement Status'
+            ])
+            for order in order_qs:
+                writer.writerow([
+                    order.warehouse.name,
+                    order.sku.sku,
+                    order.sku.product_description,
+                    order.sku.sub_category,
+                    order.grade,
+                    order.sku.volume,
+                    order.total_quantity,
+                    order.stock_available,
+                    order.percent_fulfilled,
+                    order.shortage,
+                    order.procurement_status,
+                ])
+
+            return response
+
+    # Filter options
+    warehouses = Warehouse.objects.all()
+    grades = OrderSummary.objects.all().values_list('grade', flat=True).distinct()
+    volumes = EducationalProduct.objects.all().values_list('volume', flat=True).distinct()
+    categories = EducationalProduct.objects.all().values_list('category', flat=True).distinct()
+    subcategories = EducationalProduct.objects.all().values_list('sub_category', flat=True).distinct()
+
+    print("Filters applied:")
+    print("Warehouses:", selected_warehouses)
+    print("Grades:", selected_grades)
+    print("Volumes:", selected_volumes)
+    print("Categories:", selected_categories)
+    print("Subcategories:", selected_subcategories)
+
+    context = {
+        'order_summaries': order_qs,
+        'warehouses': warehouses,
+        'grades': grades,
+        'volumes': volumes,
+        'categories': categories,
+        'subcategories': subcategories,
+        'selected_warehouses': selected_warehouses,
+        'selected_grades': selected_grades,
+        'selected_volumes': selected_volumes,
+        'selected_categories': selected_categories,
+        'selected_subcategories': selected_subcategories,
+        'page_title': 'Order Summary View',
+    }
+
+    return render(request, 'orders/order_summary_filtered.html', context)
+
+# Utility function for export
+def export_order_summary(queryset, export_type):
+    if export_type == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="order_summary.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['SKU', 'Description', 'Segment', 'Year', 'Category', 'Subcategory', 'Grade', 'Volume', 'Unit', 'Publisher'])
+
+        for obj in queryset:
+            product = obj.sku
+            writer.writerow([
+                product.sku,
+                product.product_description,
+                product.segment,
+                product.year,
+                product.category,
+                product.sub_category,
+                obj.grade,
+                product.volume,
+                product.unit,
+                product.publisher
+            ])
+        return response
+
+    elif export_type == 'excel':
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="order_summary.xlsx"'
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['SKU', 'Description', 'Segment', 'Year', 'Category', 'Subcategory', 'Grade', 'Volume', 'Unit', 'Publisher'])
+
+        for obj in queryset:
+            product = obj.sku
+            ws.append([
+                product.sku,
+                product.product_description,
+                product.segment,
+                product.year,
+                product.category,
+                product.sub_category,
+                obj.grade,
+                product.volume,
+                product.unit,
+                product.publisher
+            ])
+
+        wb.save(response)
+        return response
